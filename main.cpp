@@ -17,12 +17,17 @@
 #pragma comment(lib, "glfw3")
 #pragma comment(lib, "opengl32")
 
+#include <windows.h>
+
 static void glfw_error_callback(int error, const char* description)
 {
     fprintf(stderr, "Glfw Error %d: %s\n", error, description);
 }
 
-int main(int, char**)
+int WinMain(HINSTANCE hInstance,
+            HINSTANCE hPrevInstance,
+            LPSTR     lpCmdLine,
+            int       nShowCmd)
 {
     // Setup window
     glfwSetErrorCallback(glfw_error_callback);

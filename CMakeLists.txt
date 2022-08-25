@@ -33,6 +33,7 @@ include_directories(imgui/examples/libs/glfw/include)
 link_directories(imgui/examples/libs/glfw/lib-vc2010-64)
 
 add_executable(GenshinLoader
+  WIN32
   main.cpp
   imgui/backends/imgui_impl_glfw.cpp
   imgui/backends/imgui_impl_opengl3.cpp
@@ -43,6 +44,7 @@ add_executable(GenshinLoader
   imgui/imgui_widgets.cpp
   )
 
-find_library(glfw3 glfw3.lib)
+find_library(glfw3 glfw3.lib PATHS imgui/examples/libs/glfw/lib-vc2010-64)
 find_library(opengl32 opengl32.lib)
-link_libraries(glfw3 opengl32)
+link_libraries(opengl32)
+link_libraries(glfw3)
