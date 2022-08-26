@@ -130,6 +130,46 @@ static bool RecoverAccount(bool isGlobal, const std::vector<BYTE> &blobAccount, 
   return true;
 }
 
+struct AccountInfomation {
+  std::string name;
+  std::vector<BYTE> blobAccount, blobData;
+};
+
+#define DEFAULT_CONFIG_FILE "gl.data"
+
+void LoadSavedAccounts(std::vector<AccountInfomation> *loadedAccounts[2]) {
+    FILE f = fopen(DEFAULT_CONFIG_FILE, "r");
+    struct {
+      char name[128];
+      int isGlobal;
+      char account[128];
+      char userData[128 * 1024];
+    } accnt;
+
+    while (fscanf(f, "%s %d %s %s\n", accnt.name, &accnt.isGlobal, (char*)accnt.account, (char*)accnt.userData) != 4) {
+      (*loadedAccounts)[accnt.isGlobal != 0].push_back();
+      AccountInfomation &account = &(*loadedAccounts)[accnt.isGlobal != 0].back();
+      account.name = accnt.name;
+      size_t len = strlen(accnt.account);
+      account.blobAccount.resize(len+1);
+      memcpy(accnt.account, &account.blobAccount[0], len);
+      len = strlen(accnt.userData);
+      account.blobData.resize(len+1);
+      memcpy(accnt.userData, &account.blobData[0], len);
+    }
+
+    fclose(f);
+}
+
+void SaveAccounts(const std::vector<AccountInfomation> &loadedAccounts[2]) {
+    FILE f = fopen(DEFAULT_CONFIG_FILE, "w");
+    for (int i = 0; i != 2; ++i)
+      for (const auto &account : loadedAccounts[i])
+       fprintf(f, "%s %d %s %s\n", account.name.c_str(), i,
+               (const char*)&account.blobAccount[0], (const char*)&account.blobData[0]);
+    fclose(f);
+}
+
 int WinMain(HINSTANCE hInstance,
             HINSTANCE hPrevInstance,
             LPSTR     lpCmdLine,
@@ -201,8 +241,12 @@ int WinMain(HINSTANCE hInstance,
     //IM_ASSERT(font != NULL);
 
     // Our state
-    bool show_demo_account = true;
-    bool show_another_account = false;
+    std::vector<AccountInfomation> loadedAccounts[2];
+    // i = 0 -> CN Service
+    // i = 1 -> Global Service
+    // Load saved data from disk
+    LoadSavedAccounts(&loadedAccounts);
+
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
     // Main loop
@@ -220,47 +264,61 @@ int WinMain(HINSTANCE hInstance,
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        // 1. Show the demo window.
-        if (show_demo_account)
-        {
-            ImGui::Begin("Demo Account", &show_demo_account);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-            ImGui::Text("Hello from demo account!");
-            if (ImGui::Button("Close Me"))
-                show_demo_account = false;
-            ImGui::End();
-        }
-
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
-        {
-            static float f = 0.0f;
-            static int counter = 0;
+        for (int i = 0, bool isGlobal = false; i != 2; ++i, isGlobal = true) {
+            static int load = 0;
+            static int save = 0;
 
             ImGui::Begin("Welcome to Genshin Impact Loader!");                          // Create a window called "Hello, world!" and append into it.
 
-            ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-            ImGui::Checkbox("Demo Account", &show_demo_account);      // Edit bools storing our window open/close state
-            ImGui::Checkbox("Another Account", &show_another_account);
+            if (isGlobal) {
+              ImGui::Text("Global Service");
+            } else {
+              ImGui::Text("CN Service");
+            }
 
-            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-            ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+            ImGui::Text("Choose existing account to load or save current account.");               // Display some text (you can use a format strings too)
 
-            if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-                counter++;
+            std::vector<const char*> lc;
+            lc.clear();
+            for (const auto& accnt : loadedAccounts[i]) {
+              lc.push_back(accnt.name.c_str());
+            }
+
+            const char* items[] = &lc[0];
+            static int item_current = 0;
+            ImGui::ListBox("listbox", &item_current, items, IM_ARRAYSIZE(items), 4);
             ImGui::SameLine();
-            ImGui::Text("counter = %d", counter);
 
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-            ImGui::End();
-        }
+            if (ImGui::Button("Load from chosen account"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+                load = 1;
 
-        // 3. Show another simple account.
-        if (show_another_account)
-        {
-            ImGui::Begin("Another Account", &show_another_account);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-            ImGui::Text("Hello from another account!");
-            if (ImGui::Button("Close Me"))
-                show_another_account = false;
+            static char savedName[128] = "";
+            ImGui::InputTextWithHint("input text (w/ hint)", "enter account name", savedName, IM_ARRAYSIZE(savedName));
+            ImGui::SameLine();
+
+            if (ImGui::Button("Save to current Account"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+                save = 1;
+
             ImGui::End();
+
+            if (load) {
+              std::vector<BYTE> blobAccount, blobData;
+              if (RestoreAccount(isGlobal, loadedAccounts[item_current].blobAccount,
+                                 loadedAccounts[item_current].blobData)) {
+                load = 0;
+              }
+            }
+            if (save) {
+              std::vector<BYTE> blobAccount, blobData;
+              if (BackupAccount(isGlobal, &blobAccount, &blobData)) {
+                loadedAccounts[i].push_back(savedName);
+                // save accounts to disk
+                SaveAccounts(loadedAccounts);
+                item_current = loadedAccounts.size() - 1;
+                save = 0;
+              }
+            }
         }
 
         // Rendering
