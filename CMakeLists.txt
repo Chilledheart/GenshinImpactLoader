@@ -68,6 +68,12 @@ endif()
 
 message(STATUS "Build with MSVC ${CMAKE_MSVC_CRT_LINKAGE} CRT library")
 
+## definitions FOR CRT
+add_definitions(-D__STD_C)
+add_definitions(-D_CRT_RAND_S)
+add_definitions(-D_CRT_SECURE_NO_DEPRECATE)
+add_definitions(-D_SCL_SECURE_NO_DEPRECATE)
+
 include_directories(imgui)
 include_directories(imgui/backends)
 include_directories(imgui/examples/libs/glfw/include)

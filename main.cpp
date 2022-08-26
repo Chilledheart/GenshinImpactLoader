@@ -18,6 +18,7 @@
 #pragma comment(lib, "opengl32")
 
 #include <vector>
+#include <string>
 
 #include <windows.h>
 
@@ -137,8 +138,8 @@ struct AccountInfomation {
 
 #define DEFAULT_CONFIG_FILE "gl.data"
 
-void LoadSavedAccounts(std::vector<AccountInfomation> *loadedAccounts[2]) {
-    FILE f = fopen(DEFAULT_CONFIG_FILE, "r");
+void LoadSavedAccounts(std::vector<AccountInfomation> *loadedAccounts) {
+    FILE *f = fopen(DEFAULT_CONFIG_FILE, "r");
     struct {
       char name[128];
       int isGlobal;
@@ -146,9 +147,12 @@ void LoadSavedAccounts(std::vector<AccountInfomation> *loadedAccounts[2]) {
       char userData[128 * 1024];
     } accnt;
 
+    if (!f)
+      return;
+
     while (fscanf(f, "%s %d %s %s\n", accnt.name, &accnt.isGlobal, (char*)accnt.account, (char*)accnt.userData) != 4) {
-      (*loadedAccounts)[accnt.isGlobal != 0].push_back();
-      AccountInfomation &account = &(*loadedAccounts)[accnt.isGlobal != 0].back();
+      loadedAccounts[accnt.isGlobal != 0 ? 1 : 0].push_back(AccountInfomation());
+      AccountInfomation &account = loadedAccounts[accnt.isGlobal != 0 ? 1 : 0].back();
       account.name = accnt.name;
       size_t len = strlen(accnt.account);
       account.blobAccount.resize(len+1);
@@ -161,8 +165,10 @@ void LoadSavedAccounts(std::vector<AccountInfomation> *loadedAccounts[2]) {
     fclose(f);
 }
 
-void SaveAccounts(const std::vector<AccountInfomation> &loadedAccounts[2]) {
-    FILE f = fopen(DEFAULT_CONFIG_FILE, "w");
+void SaveAccounts(const std::vector<AccountInfomation> *loadedAccounts) {
+    FILE* f = fopen(DEFAULT_CONFIG_FILE, "w");
+    if (!f)
+      return;
     for (int i = 0; i != 2; ++i)
       for (const auto &account : loadedAccounts[i])
        fprintf(f, "%s %d %s %s\n", account.name.c_str(), i,
@@ -204,7 +210,7 @@ int WinMain(HINSTANCE hInstance,
 #endif
 
     // Create window with graphics context
-    GLFWwindow* window = glfwCreateWindow(1280, 720, "Dear Genshin Impact Loader", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(1280, 720, "Genshin Impact Loader", NULL, NULL);
     if (window == NULL)
         return 1;
     glfwMakeContextCurrent(window);
@@ -241,11 +247,14 @@ int WinMain(HINSTANCE hInstance,
     //IM_ASSERT(font != NULL);
 
     // Our state
+    bool showCnAccounts = false;
     std::vector<AccountInfomation> loadedAccounts[2];
+    std::vector<const char*> loadedAccountNames[2];
+
     // i = 0 -> CN Service
     // i = 1 -> Global Service
     // Load saved data from disk
-    LoadSavedAccounts(&loadedAccounts);
+    LoadSavedAccounts(loadedAccounts);
 
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
@@ -265,37 +274,40 @@ int WinMain(HINSTANCE hInstance,
         ImGui::NewFrame();
 
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
-        for (int i = 0, bool isGlobal = false; i != 2; ++i, isGlobal = true) {
+        for (int i = 0, isGlobal = 0; i != 2; ++i, isGlobal = 1) {
             static int load = 0;
             static int save = 0;
 
-            ImGui::Begin("Welcome to Genshin Impact Loader!");                          // Create a window called "Hello, world!" and append into it.
-
-            if (isGlobal) {
-              ImGui::Text("Global Service");
+            if (!isGlobal) {
+                if (showCnAccounts) {
+                    continue;
+                }
+                ImGui::Begin("Welcome to Genshin Impact CN Loader!", &showCnAccounts);
             } else {
-              ImGui::Text("CN Service");
+                ImGui::Begin("Welcome to Genshin Impact Global Loader!");
             }
+
+            ImGui::Text("Multi Account Switch");
 
             ImGui::Text("Choose existing account to load or save current account.");               // Display some text (you can use a format strings too)
 
-            std::vector<const char*> lc;
-            lc.clear();
+            loadedAccountNames[i].clear();
             for (const auto& accnt : loadedAccounts[i]) {
-              lc.push_back(accnt.name.c_str());
+              loadedAccountNames[i].push_back(accnt.name.c_str());
             }
 
-            const char* items[] = &lc[0];
             static int item_current = 0;
-            ImGui::ListBox("listbox", &item_current, items, IM_ARRAYSIZE(items), 4);
-            ImGui::SameLine();
+            if (!loadedAccounts[i].empty()) {
+                const char** items = &loadedAccountNames[i][0];
+                ImGui::ListBox("listbox", &item_current, items, IM_ARRAYSIZE(items), 4);
+                ImGui::SameLine();
 
-            if (ImGui::Button("Load from chosen account"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-                load = 1;
+                if (ImGui::Button("Load from chosen account"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+                    load = 1;
+            }
 
             static char savedName[128] = "";
-            ImGui::InputTextWithHint("input text (w/ hint)", "enter account name", savedName, IM_ARRAYSIZE(savedName));
-            ImGui::SameLine();
+            ImGui::InputTextWithHint("(w/ hint)", "enter account name", savedName, IM_ARRAYSIZE(savedName));
 
             if (ImGui::Button("Save to current Account"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
                 save = 1;
@@ -304,18 +316,22 @@ int WinMain(HINSTANCE hInstance,
 
             if (load) {
               std::vector<BYTE> blobAccount, blobData;
-              if (RestoreAccount(isGlobal, loadedAccounts[item_current].blobAccount,
-                                 loadedAccounts[item_current].blobData)) {
+              if (RecoverAccount(isGlobal, loadedAccounts[i][item_current].blobAccount,
+                                 loadedAccounts[i][item_current].blobData)) {
                 load = 0;
               }
             }
             if (save) {
               std::vector<BYTE> blobAccount, blobData;
               if (BackupAccount(isGlobal, &blobAccount, &blobData)) {
-                loadedAccounts[i].push_back(savedName);
+                AccountInfomation account;
+                account.name = savedName;
+                account.blobAccount = blobAccount;
+                account.blobData = blobData;
+                loadedAccounts[i].push_back(account);
+                item_current = static_cast<int>(loadedAccounts[i].size()) - 1;
                 // save accounts to disk
                 SaveAccounts(loadedAccounts);
-                item_current = loadedAccounts.size() - 1;
                 save = 0;
               }
             }
