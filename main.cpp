@@ -247,7 +247,6 @@ int WinMain(HINSTANCE hInstance,
     //IM_ASSERT(font != NULL);
 
     // Our state
-    bool showCnAccounts = false;
     std::vector<AccountInfomation> loadedAccounts[2];
     std::vector<const char*> loadedAccountNames[2];
 
@@ -278,16 +277,14 @@ int WinMain(HINSTANCE hInstance,
             static int load = 0;
             static int save = 0;
 
-            if (!isGlobal) {
-                if (showCnAccounts) {
+            if (isGlobal) {
+                if (!ImGui::TreeNode("Global Service!"))
                     continue;
-                }
-                ImGui::Begin("Welcome to Genshin Impact CN Loader!", &showCnAccounts);
-            } else {
-                ImGui::Begin("Welcome to Genshin Impact Global Loader!");
+            } else if (!ImGui::TreeNode("CN Service!")) {
+                continue;
             }
 
-            ImGui::Text("Multi Account Switch");
+            ImGui::Text("Welcome to Genshin Impact Multi Account Switch");
 
             ImGui::Text("Choose existing account to load or save current account.");               // Display some text (you can use a format strings too)
 
