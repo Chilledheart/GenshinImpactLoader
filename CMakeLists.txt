@@ -4,6 +4,20 @@ if (CMAKE_CURRENT_BINARY_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   message(FATAL_ERROR "In source-tree build not support")
 endif()
 
+# Select the MSVC runtime library for use by compilers targeting the MSVC ABI.
+# Use CMAKE_MSVC_CRT_LINKAGE variable internally, option: dynamic and static
+#
+# Introduced by cmake 3.15
+# https://cmake.org/cmake/help/latest/variable/CMAKE_MSVC_RUNTIME_LIBRARY.html#variable:CMAKE_MSVC_RUNTIME_LIBRARY
+# and https://cmake.org/cmake/help/latest/policy/CMP0091.html
+if(POLICY CMP0091)
+  cmake_policy(SET CMP0091 NEW)
+endif()
+
+# https://docs.microsoft.com/en-us/cpp/c-runtime-library/crt-library-features?redirectedfrom=MSDN&view=msvc-170
+set(CMAKE_MSVC_CRT_LINKAGE "dynamic" CACHE STRING "")
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUAL:${CMAKE_MSVC_CRT_LINKAGE},dynamic>:DLL>" CACHE STRING "")
+
 # Defer enabling C and CXX languages.
 project(GenshinLoader NONE)
 
@@ -28,6 +42,31 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 enable_language(C)
 enable_language(CXX)
+
+if (CMAKE_MSVC_CRT_LINKAGE STREQUAL "static")
+  # replace /MD with /MT
+  set(CompilerFlags
+    CMAKE_CXX_FLAGS
+    CMAKE_CXX_FLAGS_DEBUG
+    CMAKE_CXX_FLAGS_MINSIZEREL
+    CMAKE_CXX_FLAGS_RELEASE
+    CMAKE_CXX_FLAGS_RELWITHDEBINFO
+    CMAKE_C_FLAGS
+    CMAKE_C_FLAGS_DEBUG
+    CMAKE_C_FLAGS_RELEASE
+    CMAKE_C_FLAGS_MINSIZEREL
+    CMAKE_C_FLAGS_RELEASE
+    CMAKE_C_FLAGS_RELWITHDEBINFO
+    )
+  foreach(CompilerFlag ${CompilerFlags})
+    string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
+  endforeach()
+  foreach(CompilerFlag ${CompilerFlags})
+    string(REPLACE "/MDd" "/MTd" ${CompilerFlag} "${${CompilerFlag}}")
+  endforeach()
+endif()
+
+message(STATUS "Build with MSVC ${CMAKE_MSVC_CRT_LINKAGE} CRT library")
 
 include_directories(imgui)
 include_directories(imgui/backends)
