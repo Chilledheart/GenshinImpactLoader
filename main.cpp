@@ -17,11 +17,117 @@
 #pragma comment(lib, "glfw3")
 #pragma comment(lib, "opengl32")
 
+#include <vector>
+
 #include <windows.h>
 
 static void glfw_error_callback(int error, const char* description)
 {
     fprintf(stderr, "Glfw Error %d: %s\n", error, description);
+}
+
+static const wchar_t* genshinImpactCnPathKey = L"Software\\miHoYo\\原神";
+static const wchar_t* genshinImpactCnSdkKey = L"MIHOYOSDK_ADL_PROD_CN_h3123967166";
+static const wchar_t* genshinImpactGlobalPathKey = L"Software\\miHoYo\\Genshin Impact";
+static const wchar_t* genshinImpactGlobalSdkKey = L"MIHOYOSDK_ADL_PROD_OVERSEA_h1158948810";
+static const wchar_t* genshinImpactDataKey = L"GENERAL_DATA_h2389025596";
+
+static bool OpenKey(HKEY *hkey, bool isWriteOnly, bool isGlobal) {
+    DWORD disposition;
+    const wchar_t* subkey = isGlobal ? genshinImpactGlobalPathKey : genshinImpactCnPathKey;
+    REGSAM samDesired =
+        KEY_WOW64_64KEY | (isWriteOnly ? KEY_SET_VALUE : KEY_QUERY_VALUE);
+
+    // Creates the specified registry key. If the key already exists, the
+    // function opens it. Note that key names are not case sensitive.
+    if (::RegCreateKeyExW(
+            HKEY_CURRENT_USER /*hKey*/, subkey /* lpSubKey */, 0 /* Reserved */,
+            nullptr /*lpClass*/, REG_OPTION_NON_VOLATILE /* dwOptions */,
+            samDesired /* samDesired */, nullptr /*lpSecurityAttributes*/,
+            hkey /* phkResult */,
+            &disposition /* lpdwDisposition*/) == ERROR_SUCCESS) {
+      if (disposition == REG_CREATED_NEW_KEY) {
+      } else if (disposition == REG_OPENED_EXISTING_KEY) {
+      }
+      return true;
+    }
+    return false;
+}
+
+static bool ReadKey(HKEY hkey, bool isGlobal, bool isData, std::vector<BYTE>* output) {
+  const wchar_t* valueName = isData ? genshinImpactDataKey : (isGlobal ? genshinImpactGlobalSdkKey : genshinImpactCnSdkKey);
+  DWORD BufferSize;
+  DWORD type;
+
+  // If lpData is nullptr, and lpcbData is non-nullptr, the function returns
+  // ERROR_SUCCESS and stores the size of the data, in bytes, in the variable
+  // pointed to by lpcbData. This enables an application to determine the best
+  // way to allocate a buffer for the value's data.
+  if (::RegQueryValueExW(hkey /* HKEY */, valueName /* lpValueName */,
+                         nullptr /* lpReserved */, &type /* lpType */,
+                         nullptr /* lpData */,
+                         &BufferSize /* lpcbData */) != ERROR_SUCCESS) {
+    return false;
+  }
+
+  if (type != REG_BINARY || BufferSize > 1024 * 1024) {
+    return false;
+  }
+
+  output->reserve(BufferSize);
+  if (::RegQueryValueExW(hkey /* HKEY */, valueName /* lpValueName */,
+                         nullptr /* lpReserved */, &type /* lpType */,
+                         output->data() /* lpData */,
+                         &BufferSize /* lpcbData */) != ERROR_SUCCESS) {
+    return false;
+  }
+  output->resize(BufferSize);
+  return true;
+}
+
+static bool WriteKey(HKEY hkey, bool isGlobal, bool isData, const std::vector<BYTE>& output) {
+  const wchar_t* valueName = isData ? genshinImpactDataKey : (isGlobal ? genshinImpactGlobalSdkKey : genshinImpactCnSdkKey);
+  if (::RegSetValueExW(hkey /* hKey*/, valueName /*lpValueName*/, 0 /*Reserved*/,
+                       REG_BINARY /*dwType*/,
+                       output.data() /*lpData*/, static_cast<DWORD>(output.size()) /*cbData*/) == ERROR_SUCCESS) {
+    return true;
+  }
+  return false;
+}
+
+static bool CloseKey(HKEY hkey) {
+  return ::RegCloseKey(hkey);
+}
+
+static bool BackupAccount(bool isGlobal, std::vector<BYTE> *blobAccount, std::vector<BYTE> *blobData) {
+  HKEY hkey;
+  if (!OpenKey(&hkey, false, isGlobal))
+    return false;
+
+  if (!ReadKey(hkey, isGlobal, false, blobAccount))
+    return false;
+
+  if (!ReadKey(hkey, isGlobal, true, blobData))
+    return false;
+
+  CloseKey(hkey);
+  return true;
+}
+
+static bool RecoverAccount(bool isGlobal, const std::vector<BYTE> &blobAccount, const std::vector<BYTE> &blobData) {
+  HKEY hkey;
+  if (!OpenKey(&hkey, true, isGlobal))
+    return false;
+
+  if (!WriteKey(hkey, isGlobal, false, blobAccount))
+    return false;
+
+  if (!WriteKey(hkey, isGlobal, true, blobData))
+    return false;
+
+  CloseKey(hkey);
+
+  return true;
 }
 
 int WinMain(HINSTANCE hInstance,

@@ -23,6 +23,9 @@ if (APPLE AND NOT CMAKE_OSX_DEPLOYMENT_TARGET)
   set(CMAKE_OSX_DEPLOYMENT_TARGET "10.10")
 endif()
 
+## Export build compilation database if possible
+set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
+
 enable_language(C)
 enable_language(CXX)
 
