@@ -66,6 +66,10 @@ if (CMAKE_MSVC_CRT_LINKAGE STREQUAL "static")
   endforeach()
 endif()
 
+# source code contains utf-8 charcters
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /utf-8")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /utf-8")
+
 message(STATUS "Build with MSVC ${CMAKE_MSVC_CRT_LINKAGE} CRT library")
 
 ## definitions FOR CRT
