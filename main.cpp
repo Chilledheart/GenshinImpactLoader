@@ -46,93 +46,93 @@ static bool OpenKey(HKEY *hkey, bool isWriteOnly, bool isGlobal) {
             samDesired /* samDesired */, nullptr /*lpSecurityAttributes*/,
             hkey /* phkResult */,
             &disposition /* lpdwDisposition*/) == ERROR_SUCCESS) {
-      if (disposition == REG_CREATED_NEW_KEY) {
-      } else if (disposition == REG_OPENED_EXISTING_KEY) {
-      }
-      return true;
+        if (disposition == REG_CREATED_NEW_KEY) {
+        } else if (disposition == REG_OPENED_EXISTING_KEY) {
+        }
+        return true;
     }
     return false;
 }
 
 static bool ReadKey(HKEY hkey, bool isGlobal, bool isData, std::vector<BYTE>* output) {
-  const wchar_t* valueName = isData ? genshinImpactDataKey : (isGlobal ? genshinImpactGlobalSdkKey : genshinImpactCnSdkKey);
-  DWORD BufferSize;
-  DWORD type;
+    const wchar_t* valueName = isData ? genshinImpactDataKey : (isGlobal ? genshinImpactGlobalSdkKey : genshinImpactCnSdkKey);
+    DWORD BufferSize;
+    DWORD type;
 
-  // If lpData is nullptr, and lpcbData is non-nullptr, the function returns
-  // ERROR_SUCCESS and stores the size of the data, in bytes, in the variable
-  // pointed to by lpcbData. This enables an application to determine the best
-  // way to allocate a buffer for the value's data.
-  if (::RegQueryValueExW(hkey /* HKEY */, valueName /* lpValueName */,
-                         nullptr /* lpReserved */, &type /* lpType */,
-                         nullptr /* lpData */,
-                         &BufferSize /* lpcbData */) != ERROR_SUCCESS) {
-    return false;
-  }
+    // If lpData is nullptr, and lpcbData is non-nullptr, the function returns
+    // ERROR_SUCCESS and stores the size of the data, in bytes, in the variable
+    // pointed to by lpcbData. This enables an application to determine the best
+    // way to allocate a buffer for the value's data.
+    if (::RegQueryValueExW(hkey /* HKEY */, valueName /* lpValueName */,
+                           nullptr /* lpReserved */, &type /* lpType */,
+                           nullptr /* lpData */,
+                           &BufferSize /* lpcbData */) != ERROR_SUCCESS) {
+        return false;
+    }
 
-  if (type != REG_BINARY || BufferSize > 1024 * 1024) {
-    return false;
-  }
+    if (type != REG_BINARY || BufferSize > 1024 * 1024) {
+        return false;
+    }
 
-  output->resize(BufferSize);
-  if (::RegQueryValueExW(hkey /* HKEY */, valueName /* lpValueName */,
-                         nullptr /* lpReserved */, &type /* lpType */,
-                         output->data() /* lpData */,
-                         &BufferSize /* lpcbData */) != ERROR_SUCCESS) {
-    return false;
-  }
-  output->reserve(BufferSize);
-  return true;
+    output->resize(BufferSize);
+    if (::RegQueryValueExW(hkey /* HKEY */, valueName /* lpValueName */,
+                           nullptr /* lpReserved */, &type /* lpType */,
+                           output->data() /* lpData */,
+                           &BufferSize /* lpcbData */) != ERROR_SUCCESS) {
+        return false;
+    }
+    output->reserve(BufferSize);
+    return true;
 }
 
 static bool WriteKey(HKEY hkey, bool isGlobal, bool isData, const std::vector<BYTE>& output) {
-  const wchar_t* valueName = isData ? genshinImpactDataKey : (isGlobal ? genshinImpactGlobalSdkKey : genshinImpactCnSdkKey);
-  if (::RegSetValueExW(hkey /* hKey*/, valueName /*lpValueName*/, 0 /*Reserved*/,
-                       REG_BINARY /*dwType*/,
-                       output.data() /*lpData*/, static_cast<DWORD>(output.size()) /*cbData*/) == ERROR_SUCCESS) {
-    return true;
-  }
-  return false;
+    const wchar_t* valueName = isData ? genshinImpactDataKey : (isGlobal ? genshinImpactGlobalSdkKey : genshinImpactCnSdkKey);
+    if (::RegSetValueExW(hkey /* hKey*/, valueName /*lpValueName*/, 0 /*Reserved*/,
+                         REG_BINARY /*dwType*/,
+                         output.data() /*lpData*/, static_cast<DWORD>(output.size()) /*cbData*/) == ERROR_SUCCESS) {
+        return true;
+    }
+    return false;
 }
 
 static bool CloseKey(HKEY hkey) {
-  return ::RegCloseKey(hkey);
+    return ::RegCloseKey(hkey);
 }
 
 static bool BackupAccount(bool isGlobal, std::vector<BYTE> *blobAccount, std::vector<BYTE> *blobData) {
-  HKEY hkey;
-  if (!OpenKey(&hkey, false, isGlobal))
-    return false;
+    HKEY hkey;
+    if (!OpenKey(&hkey, false, isGlobal))
+        return false;
 
-  if (!ReadKey(hkey, isGlobal, false, blobAccount))
-    return false;
+    if (!ReadKey(hkey, isGlobal, false, blobAccount))
+        return false;
 
-  if (!ReadKey(hkey, isGlobal, true, blobData))
-    return false;
+    if (!ReadKey(hkey, isGlobal, true, blobData))
+        return false;
 
-  CloseKey(hkey);
-  return true;
+    CloseKey(hkey);
+    return true;
 }
 
 static bool RecoverAccount(bool isGlobal, const std::vector<BYTE> &blobAccount, const std::vector<BYTE> &blobData) {
-  HKEY hkey;
-  if (!OpenKey(&hkey, true, isGlobal))
-    return false;
+    HKEY hkey;
+    if (!OpenKey(&hkey, true, isGlobal))
+        return false;
 
-  if (!WriteKey(hkey, isGlobal, false, blobAccount))
-    return false;
+    if (!WriteKey(hkey, isGlobal, false, blobAccount))
+        return false;
 
-  if (!WriteKey(hkey, isGlobal, true, blobData))
-    return false;
+    if (!WriteKey(hkey, isGlobal, true, blobData))
+        return false;
 
-  CloseKey(hkey);
+    CloseKey(hkey);
 
-  return true;
+    return true;
 }
 
 struct AccountInfomation {
-  std::string name;
-  std::vector<BYTE> blobAccount, blobData;
+    std::string name;
+    std::vector<BYTE> blobAccount, blobData;
 };
 
 #define DEFAULT_CONFIG_FILE "GenshinImpactLoader.dat"
@@ -140,25 +140,25 @@ struct AccountInfomation {
 void LoadSavedAccounts(std::vector<AccountInfomation> *loadedAccounts) {
     FILE *f = fopen(DEFAULT_CONFIG_FILE, "r");
     struct {
-      char name[128];
-      int isGlobal;
-      char account[128];
-      char userData[128 * 1024];
+        char name[128];
+        int isGlobal;
+        char account[128];
+        char userData[128 * 1024];
     } accnt;
 
     if (!f)
-      return;
+        return;
 
     while (fscanf(f, "%s %d %s %s\n", accnt.name, &accnt.isGlobal, (char*)accnt.account, (char*)accnt.userData) == 4) {
-      loadedAccounts[accnt.isGlobal != 0 ? 1 : 0].push_back(AccountInfomation());
-      AccountInfomation &account = loadedAccounts[accnt.isGlobal != 0 ? 1 : 0].back();
-      account.name = accnt.name;
-      size_t len = strlen(accnt.account);
-      account.blobAccount.resize(len+1);
-      memcpy(accnt.account, &account.blobAccount[0], len);
-      len = strlen(accnt.userData);
-      account.blobData.resize(len+1);
-      memcpy(accnt.userData, &account.blobData[0], len);
+        loadedAccounts[accnt.isGlobal != 0 ? 1 : 0].push_back(AccountInfomation());
+        AccountInfomation &account = loadedAccounts[accnt.isGlobal != 0 ? 1 : 0].back();
+        account.name = accnt.name;
+        size_t len = strlen(accnt.account);
+        account.blobAccount.resize(len+1);
+        memcpy(accnt.account, &account.blobAccount[0], len);
+        len = strlen(accnt.userData);
+        account.blobData.resize(len+1);
+        memcpy(accnt.userData, &account.blobData[0], len);
     }
 
     fclose(f);
@@ -167,13 +167,14 @@ void LoadSavedAccounts(std::vector<AccountInfomation> *loadedAccounts) {
 void SaveAccounts(const std::vector<AccountInfomation> *loadedAccounts) {
     FILE* f = fopen(DEFAULT_CONFIG_FILE, "w");
     if (!f)
-      return;
+        return;
     for (int i = 0; i != 2; ++i)
-      for (const auto &account : loadedAccounts[i])
-       fprintf(f, "%s %d %s %s\n", account.name.c_str(), i,
-               (const char*)&account.blobAccount[0], (const char*)&account.blobData[0]);
+        for (const auto &account : loadedAccounts[i])
+           fprintf(f, "%s %d %s %s\n", account.name.c_str(), i,
+                   (const char*)&account.blobAccount[0], (const char*)&account.blobData[0]);
     fclose(f);
 }
+
 // Main Code
 int WinMain(HINSTANCE hInstance,
             HINSTANCE hPrevInstance,
@@ -277,7 +278,7 @@ int WinMain(HINSTANCE hInstance,
 
             loadedAccountNames[i].clear();
             for (const auto& accnt : loadedAccounts[i]) {
-              loadedAccountNames[i].push_back(accnt.name.c_str());
+                loadedAccountNames[i].push_back(accnt.name.c_str());
             }
 
             static int item_current = 0;
@@ -296,26 +297,26 @@ int WinMain(HINSTANCE hInstance,
                 save = 1;
 
             if (load) {
-              std::vector<BYTE> blobAccount, blobData;
-              if (RecoverAccount(isGlobal, loadedAccounts[i][item_current].blobAccount,
-                                 loadedAccounts[i][item_current].blobData)) {
-                load = 0;
-              }
+                std::vector<BYTE> blobAccount, blobData;
+                if (RecoverAccount(isGlobal, loadedAccounts[i][item_current].blobAccount,
+                                   loadedAccounts[i][item_current].blobData)) {
+                    load = 0;
+                }
             }
             if (save) {
-              std::vector<BYTE> blobAccount, blobData;
-              if (BackupAccount(isGlobal, &blobAccount, &blobData)) {
-                AccountInfomation account;
-                account.name = savedName[i];
-                account.blobAccount = blobAccount;
-                account.blobData = blobData;
-                loadedAccounts[i].push_back(account);
-                loadedAccountNames[i].push_back(savedName[i]);
-                item_current = static_cast<int>(loadedAccounts[i].size()) - 1;
-                // save accounts to disk
-                SaveAccounts(loadedAccounts);
-                save = 0;
-              }
+                std::vector<BYTE> blobAccount, blobData;
+                if (BackupAccount(isGlobal, &blobAccount, &blobData)) {
+                    AccountInfomation account;
+                    account.name = savedName[i];
+                    account.blobAccount = blobAccount;
+                    account.blobData = blobData;
+                    loadedAccounts[i].push_back(account);
+                    loadedAccountNames[i].push_back(savedName[i]);
+                    item_current = static_cast<int>(loadedAccounts[i].size()) - 1;
+                    // save accounts to disk
+                    SaveAccounts(loadedAccounts);
+                    save = 0;
+                }
             }
         }
 
