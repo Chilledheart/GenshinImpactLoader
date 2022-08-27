@@ -294,7 +294,7 @@ int WinMain(HINSTANCE hInstance,
             static int item_current = 0;
             if (!loadedAccounts[i].empty()) {
                 const char** items = &loadedAccountNames[i][0];
-                ImGui::ListBox("accounts", &item_current, items, IM_ARRAYSIZE(items), 4);
+                ImGui::ListBox(isGlobal ? "accounts" : "CN accounts", &item_current, items, loadedAccountNames[i].size(), 4);
                 ImGui::SameLine();
 
                 if (ImGui::Button("Load"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
