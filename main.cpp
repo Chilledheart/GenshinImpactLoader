@@ -75,14 +75,14 @@ static bool ReadKey(HKEY hkey, bool isGlobal, bool isData, std::vector<BYTE>* ou
     return false;
   }
 
-  output->reserve(BufferSize);
+  output->resize(BufferSize);
   if (::RegQueryValueExW(hkey /* HKEY */, valueName /* lpValueName */,
                          nullptr /* lpReserved */, &type /* lpType */,
                          output->data() /* lpData */,
                          &BufferSize /* lpcbData */) != ERROR_SUCCESS) {
     return false;
   }
-  output->resize(BufferSize);
+  output->reserve(BufferSize);
   return true;
 }
 
