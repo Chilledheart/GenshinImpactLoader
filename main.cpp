@@ -321,6 +321,7 @@ int WinMain(HINSTANCE hInstance,
                 account.blobAccount = blobAccount;
                 account.blobData = blobData;
                 loadedAccounts[i].push_back(account);
+                loadedAccountNames[i].push_back(savedName[i]);
                 item_current = static_cast<int>(loadedAccounts[i].size()) - 1;
                 // save accounts to disk
                 SaveAccounts(loadedAccounts);
