@@ -150,7 +150,7 @@ void LoadSavedAccounts(std::vector<AccountInfomation> *loadedAccounts) {
     if (!f)
       return;
 
-    while (fscanf(f, "%s %d %s %s\n", accnt.name, &accnt.isGlobal, (char*)accnt.account, (char*)accnt.userData) != 4) {
+    while (fscanf(f, "%s %d %s %s\n", accnt.name, &accnt.isGlobal, (char*)accnt.account, (char*)accnt.userData) == 4) {
       loadedAccounts[accnt.isGlobal != 0 ? 1 : 0].push_back(AccountInfomation());
       AccountInfomation &account = loadedAccounts[accnt.isGlobal != 0 ? 1 : 0].back();
       account.name = accnt.name;
@@ -249,6 +249,7 @@ int WinMain(HINSTANCE hInstance,
     // Our state
     std::vector<AccountInfomation> loadedAccounts[2];
     std::vector<const char*> loadedAccountNames[2];
+    static char savedName[2][128];
 
     // i = 0 -> CN Service
     // i = 1 -> Global Service
@@ -277,12 +278,8 @@ int WinMain(HINSTANCE hInstance,
             static int load = 0;
             static int save = 0;
 
-            if (isGlobal) {
-                if (!ImGui::TreeNode("Global Service!"))
-                    continue;
-            } else if (!ImGui::TreeNode("CN Service!")) {
+            if (!ImGui::CollapsingHeader(isGlobal ? "Global Service" : "CN Service"))
                 continue;
-            }
 
             ImGui::Text("Welcome to Genshin Impact Multi Account Switch");
 
@@ -296,20 +293,17 @@ int WinMain(HINSTANCE hInstance,
             static int item_current = 0;
             if (!loadedAccounts[i].empty()) {
                 const char** items = &loadedAccountNames[i][0];
-                ImGui::ListBox("listbox", &item_current, items, IM_ARRAYSIZE(items), 4);
+                ImGui::ListBox("accounts", &item_current, items, IM_ARRAYSIZE(items), 4);
                 ImGui::SameLine();
 
-                if (ImGui::Button("Load from chosen account"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+                if (ImGui::Button("Load"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
                     load = 1;
             }
 
-            static char savedName[128] = "";
-            ImGui::InputTextWithHint("(w/ hint)", "enter account name", savedName, IM_ARRAYSIZE(savedName));
+            ImGui::InputTextWithHint(isGlobal ? "(global/ hint)" : "(cn/ hint)", "enter account name", savedName[i], IM_ARRAYSIZE(savedName[i]));
 
-            if (ImGui::Button("Save to current Account"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+            if (ImGui::Button("Save to current Account") && strlen(savedName[i]))                            // Buttons return true when clicked (most widgets return true when edited/activated)
                 save = 1;
-
-            ImGui::End();
 
             if (load) {
               std::vector<BYTE> blobAccount, blobData;
@@ -322,7 +316,7 @@ int WinMain(HINSTANCE hInstance,
               std::vector<BYTE> blobAccount, blobData;
               if (BackupAccount(isGlobal, &blobAccount, &blobData)) {
                 AccountInfomation account;
-                account.name = savedName;
+                account.name = savedName[i];
                 account.blobAccount = blobAccount;
                 account.blobData = blobData;
                 loadedAccounts[i].push_back(account);
