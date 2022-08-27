@@ -78,17 +78,18 @@ add_definitions(-D_CRT_RAND_S)
 add_definitions(-D_CRT_SECURE_NO_DEPRECATE)
 add_definitions(-D_SCL_SECURE_NO_DEPRECATE)
 
+## imply unicode versions
+add_definitions(-DUNICODE)
+add_definitions(-D_UNICODE)
+
 include_directories(imgui)
 include_directories(imgui/backends)
-include_directories(imgui/examples/libs/glfw/include)
-
-link_directories(imgui/examples/libs/glfw/lib-vc2010-64)
 
 add_executable(GenshinLoader
   WIN32
   main.cpp
-  imgui/backends/imgui_impl_glfw.cpp
-  imgui/backends/imgui_impl_opengl3.cpp
+  imgui/backends/imgui_impl_win32.cpp
+  imgui/backends/imgui_impl_dx11.cpp
   imgui/imgui.cpp
   imgui/imgui_demo.cpp
   imgui/imgui_draw.cpp
@@ -96,7 +97,7 @@ add_executable(GenshinLoader
   imgui/imgui_widgets.cpp
   )
 
-find_library(glfw3 glfw3.lib PATHS imgui/examples/libs/glfw/lib-vc2010-64)
-find_library(opengl32 opengl32.lib)
-link_libraries(opengl32)
-link_libraries(glfw3)
+find_library(d3d11 d3d11.lib)
+find_library(d3dcompiler d3dcompiler.lib)
+link_libraries(d3d11)
+link_libraries(d3dcompiler)
