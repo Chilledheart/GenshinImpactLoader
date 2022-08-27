@@ -273,6 +273,9 @@ int WinMain(HINSTANCE hInstance,
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
+        ImGui::Begin("Welcome to Genshin Impact Multi Account Switch");                          // Create a window called "Hello, world!" and append into it.
+        ImGui::Text("Choose existing client type to load or save current account.");
+
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
         for (int i = 0, isGlobal = 0; i != 2; ++i, isGlobal = 1) {
             static int load = 0;
@@ -280,8 +283,6 @@ int WinMain(HINSTANCE hInstance,
 
             if (!ImGui::CollapsingHeader(isGlobal ? "Global Service" : "CN Service"))
                 continue;
-
-            ImGui::Text("Welcome to Genshin Impact Multi Account Switch");
 
             ImGui::Text("Choose existing account to load or save current account.");               // Display some text (you can use a format strings too)
 
@@ -327,6 +328,8 @@ int WinMain(HINSTANCE hInstance,
               }
             }
         }
+
+        ImGui::End();
 
         // Rendering
         ImGui::Render();
