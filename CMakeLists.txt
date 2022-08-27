@@ -15,7 +15,7 @@ if(POLICY CMP0091)
 endif()
 
 # https://docs.microsoft.com/en-us/cpp/c-runtime-library/crt-library-features?redirectedfrom=MSDN&view=msvc-170
-set(CMAKE_MSVC_CRT_LINKAGE "dynamic" CACHE STRING "")
+set(CMAKE_MSVC_CRT_LINKAGE "static" CACHE STRING "")
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUAL:${CMAKE_MSVC_CRT_LINKAGE},dynamic>:DLL>" CACHE STRING "")
 
 # Defer enabling C and CXX languages.
