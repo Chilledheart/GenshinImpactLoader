@@ -85,7 +85,7 @@ add_definitions(-D_UNICODE)
 include_directories(imgui)
 include_directories(imgui/backends)
 
-add_executable(GenshinLoader
+add_executable(GenshinImpactLoader
   WIN32
   main.cpp
   imgui/backends/imgui_impl_win32.cpp
