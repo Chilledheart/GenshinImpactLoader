@@ -1,4 +1,4 @@
-# GenshinLoader
+# Genshin Impact Loader
 Genshin Impact Multi-Account Login Loader
 
 Support CN Server/Oversea Server(aka Asia, Europe, America and SAR).
