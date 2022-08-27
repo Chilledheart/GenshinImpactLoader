@@ -23,6 +23,8 @@ static LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 #include <string>
 
 #include <windows.h>
+#pragma comment(lib, "d3d11")
+#pragma comment(lib, "d3dcompiler")
 
 static const wchar_t* genshinImpactCnPathKey = L"Software\\miHoYo\\原神";
 static const wchar_t* genshinImpactCnSdkKey = L"MIHOYOSDK_ADL_PROD_CN_h3123967166";
