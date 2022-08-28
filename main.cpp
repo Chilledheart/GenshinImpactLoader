@@ -182,7 +182,7 @@ int WinMain(HINSTANCE hInstance,
             int       nShowCmd)
 {
     // Create application window
-    //ImGui_ImplWin32_EnableDpiAwareness();
+    ImGui_ImplWin32_EnableDpiAwareness();
     WNDCLASSEX wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(NULL), NULL, NULL, NULL, NULL, _T("ImGui Example"), NULL };
     ::RegisterClassEx(&wc);
     HWND hwnd = ::CreateWindow(wc.lpszClassName, _T("Genshin Impact Multi Account Switch"), WS_OVERLAPPEDWINDOW, 100, 100, 1280, 800, NULL, NULL, wc.hInstance, NULL);
