@@ -155,10 +155,10 @@ void LoadSavedAccounts(std::vector<AccountInfomation> *loadedAccounts) {
         account.name = accnt.name;
         size_t len = strlen(accnt.account);
         account.blobAccount.resize(len+1);
-        memcpy(accnt.account, &account.blobAccount[0], len);
+        memcpy(&account.blobAccount[0], accnt.account, len);
         len = strlen(accnt.userData);
         account.blobData.resize(len+1);
-        memcpy(accnt.userData, &account.blobData[0], len);
+        memcpy(&account.blobData[0], accnt.userData, len);
     }
 
     fclose(f);
