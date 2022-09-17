@@ -294,10 +294,12 @@ int WinMain(HINSTANCE hInstance,
 
                 if (ImGui::Button("Load"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
                     load = 1;
-
-                if (ImGui::Button("Gone"))
-                    gone = 1;
             }
+
+            ImGui::Text("Forget current account.");               // Display some text (you can use a format strings too)
+
+            if (ImGui::Button("Gone"))
+                gone = 1;
 
             ImGui::InputTextWithHint(isGlobal ? "(global/ hint)" : "(cn/ hint)", "enter account name", savedName[i], IM_ARRAYSIZE(savedName[i]));
 
