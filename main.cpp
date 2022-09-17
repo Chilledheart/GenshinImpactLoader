@@ -274,6 +274,7 @@ int WinMain(HINSTANCE hInstance,
         for (int i = 0, isGlobal = 0; i != 2; ++i, isGlobal = 1) {
             static int load = 0;
             static int save = 0;
+            static int gone = 0;
 
             if (!ImGui::CollapsingHeader(isGlobal ? "Global Service" : "CN Service"))
                 continue;
@@ -293,6 +294,9 @@ int WinMain(HINSTANCE hInstance,
 
                 if (ImGui::Button("Load"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
                     load = 1;
+
+                if (ImGui::Button("Gone"))
+                    gone = 1;
             }
 
             ImGui::InputTextWithHint(isGlobal ? "(global/ hint)" : "(cn/ hint)", "enter account name", savedName[i], IM_ARRAYSIZE(savedName[i]));
@@ -301,10 +305,15 @@ int WinMain(HINSTANCE hInstance,
                 save = 1;
 
             if (load) {
-                std::vector<BYTE> blobAccount, blobData;
                 if (RecoverAccount(isGlobal, loadedAccounts[i][item_current].blobAccount,
                                    loadedAccounts[i][item_current].blobData)) {
                     load = 0;
+                }
+            }
+            if (gone) {
+                std::vector<BYTE> blobAccount(1, 0), blobData(1, 0);
+                if (RecoverAccount(isGlobal, blobAccount, blobData)) {
+                    gone = 0;
                 }
             }
             if (save) {
