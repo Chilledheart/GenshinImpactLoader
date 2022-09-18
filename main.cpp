@@ -271,68 +271,80 @@ int WinMain(HINSTANCE hInstance,
         ImGui::Text("Choose existing client type to load or save current account.");
 
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
-        for (int i = 0, isGlobal = 0; i != 2; ++i, isGlobal = 1) {
-            static int load = 0;
-            static int save = 0;
-            static int gone = 0;
+        ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
+        if (ImGui::BeginTabBar("ServerTabBar", tab_bar_flags)) {
+            for (int i = 0, isGlobal = 0; i != 2; ++i, isGlobal = 1) {
+                static int load = 0;
+                static int save = 0;
+                static int gone = 0;
 
-            if (!ImGui::CollapsingHeader(isGlobal ? "Global Service" : "CN Service"))
-                continue;
+                if (!ImGui::BeginTabItem(isGlobal ? u8"Global 国际服" : u8"CN 国服"))
+                    continue;
 
-            ImGui::Text("Choose existing account to load or save current account.");               // Display some text (you can use a format strings too)
+                ImGui::Text("Choose existing account to load or save current account.");               // Display some text (you can use a format strings too)
 
-            loadedAccountNames[i].clear();
-            for (const auto& accnt : loadedAccounts[i]) {
-                loadedAccountNames[i].push_back(accnt.name.c_str());
-            }
+                loadedAccountNames[i].clear();
+                for (const auto& accnt : loadedAccounts[i]) {
+                    loadedAccountNames[i].push_back(accnt.name.c_str());
+                }
 
-            static int item_current = 0;
-            if (!loadedAccounts[i].empty()) {
-                const char** items = &loadedAccountNames[i][0];
-                ImGui::ListBox(isGlobal ? "accounts" : "CN accounts", &item_current, items, static_cast<int>(loadedAccountNames[i].size()), 4);
+                static int item_current = 0;
+                if (!loadedAccounts[i].empty()) {
+                    const char** items = &loadedAccountNames[i][0];
+                    ImGui::ListBox(isGlobal ? "accounts" : "CN accounts", &item_current, items, static_cast<int>(loadedAccountNames[i].size()), 4);
+                    ImGui::SameLine();
+
+                    if (ImGui::Button("Load"))
+                        load = 1;
+                }
+
+                ImGui::InputTextWithHint(isGlobal ? "(global/ hint)" : "(cn/ hint)", "enter account name", savedName[i], IM_ARRAYSIZE(savedName[i]));
+
+                ImGui::Text("Save current account.");
+
                 ImGui::SameLine();
 
-                if (ImGui::Button("Load"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-                    load = 1;
-            }
+                if (ImGui::Button("Save") && strlen(savedName[i]))
+                    save = 1;
 
-            ImGui::Text("Forget current account.");               // Display some text (you can use a format strings too)
+                ImGui::Text("Forget current account.");
 
-            if (ImGui::Button("Gone"))
-                gone = 1;
+                ImGui::SameLine();
 
-            ImGui::InputTextWithHint(isGlobal ? "(global/ hint)" : "(cn/ hint)", "enter account name", savedName[i], IM_ARRAYSIZE(savedName[i]));
+                if (ImGui::Button("Gone"))
+                    gone = 1;
 
-            if (ImGui::Button("Save to current Account") && strlen(savedName[i]))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-                save = 1;
-
-            if (load) {
-                if (RecoverAccount(isGlobal, loadedAccounts[i][item_current].blobAccount,
-                                   loadedAccounts[i][item_current].blobData)) {
-                    load = 0;
+                if (load) {
+                    if (RecoverAccount(isGlobal, loadedAccounts[i][item_current].blobAccount,
+                                       loadedAccounts[i][item_current].blobData)) {
+                        load = 0;
+                    }
                 }
-            }
-            if (gone) {
-                std::vector<BYTE> blobAccount(1, 0), blobData(1, 0);
-                if (RecoverAccount(isGlobal, blobAccount, blobData)) {
-                    gone = 0;
+                if (gone) {
+                    std::vector<BYTE> blobAccount(1, 0), blobData(1, 0);
+                    if (RecoverAccount(isGlobal, blobAccount, blobData)) {
+                        gone = 0;
+                    }
                 }
-            }
-            if (save) {
-                std::vector<BYTE> blobAccount, blobData;
-                if (BackupAccount(isGlobal, &blobAccount, &blobData)) {
-                    AccountInfomation account;
-                    account.name = savedName[i];
-                    account.blobAccount = blobAccount;
-                    account.blobData = blobData;
-                    loadedAccounts[i].push_back(account);
-                    loadedAccountNames[i].push_back(savedName[i]);
-                    item_current = static_cast<int>(loadedAccounts[i].size()) - 1;
-                    // save accounts to disk
-                    SaveAccounts(loadedAccounts);
-                    save = 0;
+                if (save) {
+                    std::vector<BYTE> blobAccount, blobData;
+                    if (BackupAccount(isGlobal, &blobAccount, &blobData)) {
+                        AccountInfomation account;
+                        account.name = savedName[i];
+                        account.blobAccount = blobAccount;
+                        account.blobData = blobData;
+                        loadedAccounts[i].push_back(account);
+                        loadedAccountNames[i].push_back(savedName[i]);
+                        item_current = static_cast<int>(loadedAccounts[i].size()) - 1;
+                        // save accounts to disk
+                        SaveAccounts(loadedAccounts);
+                        save = 0;
+                    }
                 }
+                ImGui::EndTabItem();
             }
+            ImGui::EndTabBar();
+            ImGui::Separator();
         }
 
         ImGui::End();
