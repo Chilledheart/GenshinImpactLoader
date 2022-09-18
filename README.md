@@ -12,7 +12,7 @@ Support CN Server/Oversea Server(aka Asia, Europe, America and SAR).
 Support to store/switch to Unlimited accounts other than 1 only.
 
 # Usage of Genshin Impact Loader to switch logged-in accounts
-![Untitled](https://user-images.githubusercontent.com/54673341/190845028-8fb08e31-620d-4fb6-a83f-bb7d2ad6f626.jpg)
+![Untitled](https://user-images.githubusercontent.com/54673341/190893500-71463b63-6359-42b2-b27e-5722af59f876.jpg)
 
 1. Run `Genshin Impact Launcher` and Click `Run`.
 2. Login the 1st account in `Genshin Impact`.
