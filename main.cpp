@@ -32,7 +32,10 @@ static const wchar_t* genshinImpactGlobalPathKey = L"Software\\miHoYo\\Genshin I
 static const wchar_t* genshinImpactGlobalSdkKey = L"MIHOYOSDK_ADL_PROD_OVERSEA_h1158948810";
 static const wchar_t* genshinImpactDataKey = L"GENERAL_DATA_h2389025596";
 
-static const size_t kMaxDisplayNameLength = 128U;
+static constexpr size_t kMaxDisplayNameLength = 128U;
+static constexpr size_t kRegReadMaximumSize = 1024 * 1024;
+
+#define DEFAULT_CONFIG_FILE "GenshinImpactLoader.dat"
 
 static bool OpenKey(HKEY *hkey, bool isWriteOnly, bool isCN) {
     DWORD disposition;
@@ -72,13 +75,15 @@ static bool ReadKey(HKEY hkey, bool isCN, bool isData, std::vector<BYTE>* output
         return false;
     }
 
-    if (type != REG_BINARY || BufferSize > 1024 * 1024) {
+    if (type != REG_BINARY || BufferSize > kRegReadMaximumSize) {
         return false;
     }
 
     output->resize(BufferSize);
-    if (::RegQueryValueExW(hkey /* HKEY */, valueName /* lpValueName */,
-                           nullptr /* lpReserved */, &type /* lpType */,
+    if (::RegQueryValueExW(hkey /* HKEY */,
+                           valueName /* lpValueName */,
+                           nullptr /* lpReserved */,
+                           &type /* lpType */,
                            output->data() /* lpData */,
                            &BufferSize /* lpcbData */) != ERROR_SUCCESS) {
         return false;
@@ -89,9 +94,12 @@ static bool ReadKey(HKEY hkey, bool isCN, bool isData, std::vector<BYTE>* output
 
 static bool WriteKey(HKEY hkey, bool isCN, bool isData, const std::vector<BYTE>& output) {
     const wchar_t* valueName = isData ? genshinImpactDataKey : (isCN ? genshinImpactCnSdkKey : genshinImpactGlobalSdkKey);
-    if (::RegSetValueExW(hkey /* hKey*/, valueName /*lpValueName*/, 0 /*Reserved*/,
+    if (::RegSetValueExW(hkey /* hKey*/,
+                         valueName /*lpValueName*/,
+                         0 /*Reserved*/,
                          REG_BINARY /*dwType*/,
-                         output.data() /*lpData*/, static_cast<DWORD>(output.size()) /*cbData*/) == ERROR_SUCCESS) {
+                         output.data() /*lpData*/,
+                         static_cast<DWORD>(output.size()) /*cbData*/) == ERROR_SUCCESS) {
         return true;
     }
     return false;
@@ -169,8 +177,6 @@ class Account {
     std::vector<BYTE> data_;
 };
 
-#define DEFAULT_CONFIG_FILE "GenshinImpactLoader.dat"
-
 void LoadSavedAccounts(std::vector<Account> *loadedAccounts) {
     FILE *f = fopen(DEFAULT_CONFIG_FILE, "r");
     struct {
@@ -183,7 +189,7 @@ void LoadSavedAccounts(std::vector<Account> *loadedAccounts) {
     if (!f)
         return;
 
-    while (fscanf(f, "%s %d %s %s\n", accnt.name, &accnt.isGlobal, (char*)accnt.account, (char*)accnt.userData) == 4) {
+    while (fscanf(f, "%s %d %s %s\n", accnt.name, &accnt.isGlobal, accnt.account, accnt.userData) == 4) {
         std::string display_name = accnt.name;
         std::vector<BYTE> name;
         size_t len = strlen(accnt.account);
@@ -222,6 +228,7 @@ int WinMain(HINSTANCE hInstance,
 {
     // Create application window
     ImGui_ImplWin32_EnableDpiAwareness();
+
     WNDCLASSEX wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(NULL), NULL, NULL, NULL, NULL, _T("ImGui Example"), NULL };
     ::RegisterClassEx(&wc);
     HWND hwnd = ::CreateWindow(wc.lpszClassName, _T("Genshin Impact Multi Account Switch"), WS_OVERLAPPEDWINDOW, 100, 100, 600, 400, NULL, NULL, wc.hInstance, NULL);
@@ -267,7 +274,13 @@ int WinMain(HINSTANCE hInstance,
     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/ProggyTiny.ttf", 10.0f);
     // ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
     ImFont* font;
-    font = io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\simsun.ttc", 16.0f, NULL, io.Fonts->GetGlyphRangesChineseSimplifiedCommon());
+
+    // A quick way to get dpi (monitor-based)
+    HDC hDC = ::GetDC(hwnd);
+    UINT ydpi = GetDeviceCaps(hDC, LOGPIXELSY);
+    ::ReleaseDC(nullptr, hDC);
+
+    font = io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\simsun.ttc", 12.0f * ydpi / 96, NULL, io.Fonts->GetGlyphRangesChineseSimplifiedCommon());
     IM_ASSERT(font != NULL);
     font = io.Fonts->AddFontDefault();
     IM_ASSERT(font != NULL);
@@ -340,7 +353,8 @@ int WinMain(HINSTANCE hInstance,
 
                 ImGui::InputTextWithHint(isGlobal ? "(global/ hint)" : "(cn/ hint)",
                                          isGlobal ? u8"enter account name" : u8"请输入当前名称",
-                                         savedName[i], IM_ARRAYSIZE(savedName[i]));
+                                         savedName[i],
+                                         IM_ARRAYSIZE(savedName[i]));
 
                 ImGui::Text(isGlobal ? u8"Save current account." : u8"保存当前");
 
