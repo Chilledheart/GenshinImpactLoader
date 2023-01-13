@@ -32,9 +32,11 @@ static const wchar_t* genshinImpactGlobalPathKey = L"Software\\miHoYo\\Genshin I
 static const wchar_t* genshinImpactGlobalSdkKey = L"MIHOYOSDK_ADL_PROD_OVERSEA_h1158948810";
 static const wchar_t* genshinImpactDataKey = L"GENERAL_DATA_h2389025596";
 
-static bool OpenKey(HKEY *hkey, bool isWriteOnly, bool isGlobal) {
+static const size_t kMaxDisplayNameLength = 128U;
+
+static bool OpenKey(HKEY *hkey, bool isWriteOnly, bool isCN) {
     DWORD disposition;
-    const wchar_t* subkey = isGlobal ? genshinImpactGlobalPathKey : genshinImpactCnPathKey;
+    const wchar_t* subkey = isCN ? genshinImpactCnPathKey : genshinImpactGlobalPathKey;
     REGSAM samDesired =
         KEY_WOW64_64KEY | (isWriteOnly ? KEY_SET_VALUE : KEY_QUERY_VALUE);
 
@@ -54,8 +56,8 @@ static bool OpenKey(HKEY *hkey, bool isWriteOnly, bool isGlobal) {
     return false;
 }
 
-static bool ReadKey(HKEY hkey, bool isGlobal, bool isData, std::vector<BYTE>* output) {
-    const wchar_t* valueName = isData ? genshinImpactDataKey : (isGlobal ? genshinImpactGlobalSdkKey : genshinImpactCnSdkKey);
+static bool ReadKey(HKEY hkey, bool isCN, bool isData, std::vector<BYTE>* output) {
+    const wchar_t* valueName = isData ? genshinImpactDataKey : (isCN ? genshinImpactCnSdkKey : genshinImpactGlobalSdkKey);
     DWORD BufferSize;
     DWORD type;
 
@@ -85,8 +87,8 @@ static bool ReadKey(HKEY hkey, bool isGlobal, bool isData, std::vector<BYTE>* ou
     return true;
 }
 
-static bool WriteKey(HKEY hkey, bool isGlobal, bool isData, const std::vector<BYTE>& output) {
-    const wchar_t* valueName = isData ? genshinImpactDataKey : (isGlobal ? genshinImpactGlobalSdkKey : genshinImpactCnSdkKey);
+static bool WriteKey(HKEY hkey, bool isCN, bool isData, const std::vector<BYTE>& output) {
+    const wchar_t* valueName = isData ? genshinImpactDataKey : (isCN ? genshinImpactCnSdkKey : genshinImpactGlobalSdkKey);
     if (::RegSetValueExW(hkey /* hKey*/, valueName /*lpValueName*/, 0 /*Reserved*/,
                          REG_BINARY /*dwType*/,
                          output.data() /*lpData*/, static_cast<DWORD>(output.size()) /*cbData*/) == ERROR_SUCCESS) {
@@ -99,48 +101,80 @@ static bool CloseKey(HKEY hkey) {
     return ::RegCloseKey(hkey);
 }
 
-static bool BackupAccount(bool isGlobal, std::vector<BYTE> *blobAccount, std::vector<BYTE> *blobData) {
-    HKEY hkey;
-    if (!OpenKey(&hkey, false, isGlobal))
+class Account {
+  public:
+    Account(bool is_cn, const std::string& display_name)
+      : is_cn_(is_cn), display_name_(display_name) {}
+
+    Account(bool is_cn, const std::string& display_name,
+            const std::vector<BYTE> &name,
+            const std::vector<BYTE> &data)
+      : is_cn_(is_cn), display_name_(display_name),
+        name_(name), data_(data) {}
+
+    const std::string& display_name() const {
+      return display_name_;
+    }
+
+    const std::vector<BYTE>& name() const {
+      return name_;
+    }
+
+    const std::vector<BYTE>& data() const {
+      return data_;
+    }
+
+    bool Load() {
+        HKEY hkey;
+        if (!OpenKey(&hkey, false, is_cn_))
+            return false;
+
+        if (!ReadKey(hkey, is_cn_, false, &name_))
+            goto failure;
+
+        if (!ReadKey(hkey, is_cn_, true, &data_))
+            goto failure;
+
+        CloseKey(hkey);
+        return true;
+
+    failure:
+        CloseKey(hkey);
         return false;
+    }
 
-    if (!ReadKey(hkey, isGlobal, false, blobAccount))
+    bool Save() const {
+        HKEY hkey;
+        if (!OpenKey(&hkey, true, is_cn_))
+            return false;
+
+        if (!WriteKey(hkey, is_cn_, false, name_))
+            goto failure;
+
+        if (!WriteKey(hkey, is_cn_, true, data_))
+            goto failure;
+
+        CloseKey(hkey);
+        return true;
+
+    failure:
+        CloseKey(hkey);
         return false;
+    }
 
-    if (!ReadKey(hkey, isGlobal, true, blobData))
-        return false;
-
-    CloseKey(hkey);
-    return true;
-}
-
-static bool RecoverAccount(bool isGlobal, const std::vector<BYTE> &blobAccount, const std::vector<BYTE> &blobData) {
-    HKEY hkey;
-    if (!OpenKey(&hkey, true, isGlobal))
-        return false;
-
-    if (!WriteKey(hkey, isGlobal, false, blobAccount))
-        return false;
-
-    if (!WriteKey(hkey, isGlobal, true, blobData))
-        return false;
-
-    CloseKey(hkey);
-
-    return true;
-}
-
-struct AccountInfomation {
-    std::string name;
-    std::vector<BYTE> blobAccount, blobData;
+  private:
+    const bool is_cn_;
+    const std::string display_name_;
+    std::vector<BYTE> name_;
+    std::vector<BYTE> data_;
 };
 
 #define DEFAULT_CONFIG_FILE "GenshinImpactLoader.dat"
 
-void LoadSavedAccounts(std::vector<AccountInfomation> *loadedAccounts) {
+void LoadSavedAccounts(std::vector<Account> *loadedAccounts) {
     FILE *f = fopen(DEFAULT_CONFIG_FILE, "r");
     struct {
-        char name[128];
+        char name[kMaxDisplayNameLength];
         int isGlobal;
         char account[128];
         char userData[128 * 1024];
@@ -150,28 +184,33 @@ void LoadSavedAccounts(std::vector<AccountInfomation> *loadedAccounts) {
         return;
 
     while (fscanf(f, "%s %d %s %s\n", accnt.name, &accnt.isGlobal, (char*)accnt.account, (char*)accnt.userData) == 4) {
-        loadedAccounts[accnt.isGlobal != 0 ? 1 : 0].push_back(AccountInfomation());
-        AccountInfomation &account = loadedAccounts[accnt.isGlobal != 0 ? 1 : 0].back();
-        account.name = accnt.name;
+        std::string display_name = accnt.name;
+        std::vector<BYTE> name;
         size_t len = strlen(accnt.account);
-        account.blobAccount.resize(len+1);
-        memcpy(&account.blobAccount[0], accnt.account, len);
+        name.resize(len + 1, 0);
+        memcpy(name.data(), accnt.account, len);
+
+        std::vector<BYTE> data;
         len = strlen(accnt.userData);
-        account.blobData.resize(len+1);
-        memcpy(&account.blobData[0], accnt.userData, len);
+        data.resize(len + 1, 0);
+        memcpy(data.data(), accnt.userData, len);
+        Account account(!accnt.isGlobal, display_name, name, data);
+
+        loadedAccounts[accnt.isGlobal != 0 ? 1 : 0].push_back(account);
     }
 
     fclose(f);
 }
 
-void SaveAccounts(const std::vector<AccountInfomation> *loadedAccounts) {
+void SaveAccounts(const std::vector<Account> *loadedAccounts) {
     FILE* f = fopen(DEFAULT_CONFIG_FILE, "w");
     if (!f)
         return;
     for (int i = 0; i != 2; ++i)
         for (const auto &account : loadedAccounts[i])
-           fprintf(f, "%s %d %s %s\n", account.name.c_str(), i,
-                   (const char*)&account.blobAccount[0], (const char*)&account.blobData[0]);
+           fprintf(f, "%s %d %s %s\n", account.display_name().c_str(), i,
+                   (const char*)&account.name()[0],
+                   (const char*)&account.data()[0]);
     fclose(f);
 }
 
@@ -234,9 +273,9 @@ int WinMain(HINSTANCE hInstance,
     IM_ASSERT(font != NULL);
 
     // Our state
-    std::vector<AccountInfomation> loadedAccounts[2];
+    std::vector<Account> loadedAccounts[2];
     std::vector<const char*> loadedAccountNames[2];
-    static char savedName[2][128];
+    static char savedName[2][kMaxDisplayNameLength];
 
     // i = 0 -> CN Service
     // i = 1 -> Global Service
@@ -268,7 +307,7 @@ int WinMain(HINSTANCE hInstance,
         ImGui::NewFrame();
 
         ImGui::Begin("Welcome to Genshin Impact Multi Account Switch");                          // Create a window called "Hello, world!" and append into it.
-        ImGui::Text("Choose existing client type to load or save current account.");
+        ImGui::Text("Choose client type to load or save current logged-in account.");
 
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
         ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
@@ -278,67 +317,67 @@ int WinMain(HINSTANCE hInstance,
                 static int save = 0;
                 static int gone = 0;
 
-                if (!ImGui::BeginTabItem(isGlobal ? u8"Global 国际服" : u8"CN 国服"))
+                if (!ImGui::BeginTabItem(isGlobal ? u8"Global Server" : u8"国服"))
                     continue;
 
-                ImGui::Text("Choose existing account to load or save current account.");               // Display some text (you can use a format strings too)
+                ImGui::Text(isGlobal ? u8"Choose existing account to load or save current account."
+                            : u8"请选择加载当前或者保存当前");
 
                 loadedAccountNames[i].clear();
                 for (const auto& accnt : loadedAccounts[i]) {
-                    loadedAccountNames[i].push_back(accnt.name.c_str());
+                    loadedAccountNames[i].push_back(accnt.display_name().c_str());
                 }
 
                 static int item_current = 0;
                 if (!loadedAccounts[i].empty()) {
                     const char** items = &loadedAccountNames[i][0];
-                    ImGui::ListBox(isGlobal ? "accounts" : "CN accounts", &item_current, items, static_cast<int>(loadedAccountNames[i].size()), 4);
+                    ImGui::ListBox(u8"accounts", &item_current, items, static_cast<int>(loadedAccountNames[i].size()), 4);
                     ImGui::SameLine();
 
-                    if (ImGui::Button("Load"))
+                    if (ImGui::Button(isGlobal ? u8"Save" : u8"载入"))
                         load = 1;
                 }
 
-                ImGui::InputTextWithHint(isGlobal ? "(global/ hint)" : "(cn/ hint)", "enter account name", savedName[i], IM_ARRAYSIZE(savedName[i]));
+                ImGui::InputTextWithHint(isGlobal ? "(global/ hint)" : "(cn/ hint)",
+                                         isGlobal ? u8"enter account name" : u8"请输入当前名称",
+                                         savedName[i], IM_ARRAYSIZE(savedName[i]));
 
-                ImGui::Text("Save current account.");
+                ImGui::Text(isGlobal ? u8"Save current account." : u8"保存当前");
 
                 ImGui::SameLine();
 
-                if (ImGui::Button("Save") && strlen(savedName[i]))
+                if (ImGui::Button(isGlobal ? u8"Save" : u8"保存") && strlen(savedName[i]))
                     save = 1;
 
-                ImGui::Text("Forget current account.");
+                ImGui::Text(isGlobal ? u8"Wipe current logged-in account." : u8"抹去当前");
 
                 ImGui::SameLine();
 
-                if (ImGui::Button("Gone"))
+                if (ImGui::Button(isGlobal ? u8"Gone" : u8"抹去"))
                     gone = 1;
 
                 if (load) {
-                    if (RecoverAccount(isGlobal, loadedAccounts[i][item_current].blobAccount,
-                                       loadedAccounts[i][item_current].blobData)) {
+                    if (loadedAccounts[i][item_current].Save()) {
                         load = 0;
                     }
                 }
                 if (gone) {
-                    std::vector<BYTE> blobAccount(1, 0), blobData(1, 0);
-                    if (RecoverAccount(isGlobal, blobAccount, blobData)) {
+                    std::vector<BYTE> name(1, 0), data(1, 0);
+                    Account account(!isGlobal, "Gone", name, data);
+                    if (account.Save()) {
                         gone = 0;
                     }
                 }
                 if (save) {
-                    std::vector<BYTE> blobAccount, blobData;
-                    if (BackupAccount(isGlobal, &blobAccount, &blobData)) {
-                        AccountInfomation account;
-                        account.name = savedName[i];
-                        account.blobAccount = blobAccount;
-                        account.blobData = blobData;
+                    Account account(!isGlobal, savedName[i]);
+                    if (account.Load()) {
                         loadedAccounts[i].push_back(account);
-                        loadedAccountNames[i].push_back(savedName[i]);
+                        loadedAccountNames[i].push_back(account.display_name().c_str());
                         item_current = static_cast<int>(loadedAccounts[i].size()) - 1;
                         // save accounts to disk
                         SaveAccounts(loadedAccounts);
                         save = 0;
+                        savedName[i][0] = '\0';
                     }
                 }
                 ImGui::EndTabItem();
