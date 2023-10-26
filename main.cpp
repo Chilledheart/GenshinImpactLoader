@@ -144,6 +144,10 @@ class Account {
       return display_name_;
     }
 
+    const bool is_cn() const {
+      return is_cn_;
+    }
+
     const std::vector<BYTE>& name() const {
       return name_;
     }
@@ -222,7 +226,7 @@ void LoadSavedAccounts(std::vector<Account> *loadedAccounts) {
         memcpy(data.data(), accnt.userData, len);
         Account account(!accnt.isGlobal, display_name, name, data);
 
-        loadedAccounts[accnt.isGlobal != 0 ? 1 : 0].push_back(account);
+        loadedAccounts[accnt.isGlobal != 0 ? 0 : 1].push_back(account);
     }
 
     fclose(f);
@@ -234,7 +238,8 @@ void SaveAccounts(const std::vector<Account> *loadedAccounts) {
         return;
     for (int i = 0; i != 2; ++i)
         for (const auto &account : loadedAccounts[i])
-           fprintf(f, "%s %d %s %s\n", account.display_name().c_str(), i,
+           fprintf(f, "%s %d %s %s\n", account.display_name().c_str(),
+                   !account.is_cn(),
                    (const char*)&account.name()[0],
                    (const char*)&account.data()[0]);
     fclose(f);
