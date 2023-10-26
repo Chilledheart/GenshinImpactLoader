@@ -4,7 +4,6 @@
 // Main code
 #include <vector>
 #include <string>
-#include <tchar.h>
 #include <stdio.h>
 
 #include <windows.h>
@@ -250,12 +249,12 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
     WNDCLASSEXW wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L,
       ::GetModuleHandleW(NULL), NULL, NULL, NULL, NULL,
-      _T("Genshin Impact Loader Class"), NULL };
+      L"Genshin Impact Loader Class", NULL };
     ::RegisterClassExW(&wc);
     INT x = 100, y = 100;
     INT width = 460, height = 400;
     HWND hwnd = ::CreateWindowW(wc.lpszClassName,
-                                _T("Genshin Impact Multi Account Switch"),
+                                L"Genshin Impact Multi Account Switch",
                                 WS_OVERLAPPEDWINDOW, x, y, width, height,
                                 NULL, NULL, wc.hInstance, NULL);
 
