@@ -33,10 +33,6 @@ if(MSVC)
   set(CMAKE_CXX_COMPILER_ARCHITECTURE_ID "${CMAKE_CXX_COMPILER_TARGET}" CACHE STRING "")
 endif()
 
-if (APPLE AND NOT CMAKE_OSX_DEPLOYMENT_TARGET)
-  set(CMAKE_OSX_DEPLOYMENT_TARGET "10.10")
-endif()
-
 ## Export build compilation database if possible
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
@@ -89,6 +85,11 @@ add_definitions(-D_UNICODE)
 
 include_directories(imgui)
 include_directories(imgui/backends)
+
+# add windows 7 support
+add_definitions(-DWINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP)
+add_definitions(-D_WIN32_WINNT=0x0601)
+add_definitions(-DWINVER=0x0601)
 
 add_executable(GenshinImpactLoader
   WIN32
