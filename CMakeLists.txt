@@ -19,7 +19,8 @@ set(CMAKE_MSVC_CRT_LINKAGE "static" CACHE STRING "")
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUAL:${CMAKE_MSVC_CRT_LINKAGE},dynamic>:DLL>" CACHE STRING "")
 
 # Defer enabling C and CXX languages.
-project(GenshinLoader NONE)
+set(APP_NAME "GenshinImpactLoader")
+project(${APP_NAME} NONE)
 
 if(MSVC)
   # On Windows, prefer cl over gcc if both are available. By default most of
@@ -91,7 +92,7 @@ add_definitions(-DWINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP)
 add_definitions(-D_WIN32_WINNT=0x0601)
 add_definitions(-DWINVER=0x0601)
 
-add_executable(GenshinImpactLoader
+add_executable(${APP_NAME}
   WIN32
   main.cpp
   resource.rc
