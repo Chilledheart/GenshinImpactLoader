@@ -9,6 +9,7 @@ Genshin Impact Multi-Account Login Loader
 [![Windows Build](https://github.com/Chilledheart/GenshinImpactLoader/actions/workflows/publish.yml/badge.svg)](https://github.com/Chilledheart/GenshinImpactLoader/actions/workflows/publish.yml)
 
 Support CN Server/Oversea Server(aka Asia, Europe, America and SAR).
+
 Support to store/switch to Unlimited accounts other than 1 only.
 
 # Usage of Genshin Impact Loader to switch logged-in accounts
@@ -24,9 +25,12 @@ Support to store/switch to Unlimited accounts other than 1 only.
 8. You can see and choose you have multi-accounts in the account list.
 9. Choose your account and Click `Load` before you start `Genshin Impact`.
 
-# Runtime Requirement (optional, only used when compiled with dynamic crt)
+# Optional Step
 
-Microsoft Visual C++ Redistributable latest supported downloads (2019): https://aka.ms/vs/16/release/vc_redist.x64.exe
+Runtime Requirement only used when build manually with dynamic crt.
+
+Microsoft Visual C++ Redistributable downloads (2019): https://aka.ms/vs/16/release/vc_redist.x64.exe
+Microsoft Visual C++ Redistributable downloads (2022): https://aka.ms/vs/17/release/vc_redist.x64.exe
 
 # LICENCE
 The source code including public resources is MIT Licensed.
