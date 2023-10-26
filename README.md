@@ -14,7 +14,7 @@ Support to store/switch to Unlimited accounts other than 1 only.
 
 # Usage of Genshin Impact Loader to switch logged-in accounts
 
-<img width="460" alt="snapshot" src="https://github.com/Chilledheart/GenshinImpactLoader/assets/54673341/47038103-af2b-441a-9ec7-f25cd70ba3fc">
+<img width="460" alt="snapshot" src="https://github.com/Chilledheart/GenshinImpactLoader/assets/54673341/3a10f2fd-6cc3-4822-8c96-505d4821e1d1">
 
 1. Run `Genshin Impact Launcher` and Click `Run`.
 2. Login the 1st account in `Genshin Impact`.
