@@ -40,8 +40,21 @@ static const wchar_t* genshinImpactDataKey = L"GENERAL_DATA_h2389025596";
 static constexpr size_t kMaxDisplayNameLength = 128U;
 static constexpr size_t kRegReadMaximumSize = 1024 * 1024;
 
+static constexpr char kFontName[] = "C:\\Windows\\Fonts\\msyh.ttc";
+static constexpr char kFontName2[] = "C:\\Windows\\Fonts\\msyh.ttf";
+static constexpr INT kFontSize = 14;
+static constexpr char kFontName3[] = "C:\\Windows\\Fonts\\simsun.ttc";
+static constexpr INT kFontSize3 = 12;
+
 #define DEFAULT_CONFIG_FILE "GenshinImpactLoader.dat"
-#define SCALED_SIZE(X, uDpi) MulDiv(X, uDpi, 96)
+#define SCALED_SIZE(X, uDpi) (MulDiv(X, uDpi, 96))
+
+bool FileExists(LPCSTR szPath) {
+    DWORD dwAttrib = GetFileAttributesA(szPath);
+
+    return (dwAttrib != INVALID_FILE_ATTRIBUTES &&
+           !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+}
 
 static bool OpenKey(HKEY *hkey, bool isWriteOnly, bool isCN) {
     DWORD disposition;
@@ -227,10 +240,10 @@ void SaveAccounts(const std::vector<Account> *loadedAccounts) {
 }
 
 // Main Code
-int WinMain(HINSTANCE hInstance,
-            HINSTANCE hPrevInstance,
-            LPSTR     lpCmdLine,
-            int       nShowCmd)
+int WINAPI WinMain(HINSTANCE hInstance,
+                   HINSTANCE hPrevInstance,
+                   LPSTR     lpCmdLine,
+                   int       nShowCmd)
 {
     // Create application window
     ImGui_ImplWin32_EnableDpiAwareness();
@@ -239,8 +252,8 @@ int WinMain(HINSTANCE hInstance,
       ::GetModuleHandleW(NULL), NULL, NULL, NULL, NULL,
       _T("Genshin Impact Loader Class"), NULL };
     ::RegisterClassExW(&wc);
-    int x = 100, y = 100;
-    int width = 450, height = 600;
+    INT x = 100, y = 100;
+    INT width = 460, height = 400;
     HWND hwnd = ::CreateWindowW(wc.lpszClassName,
                                 _T("Genshin Impact Multi Account Switch"),
                                 WS_OVERLAPPEDWINDOW, x, y, width, height,
@@ -290,16 +303,28 @@ int WinMain(HINSTANCE hInstance,
 
     // A quick way to get dpi (monitor-based)
     HDC hDC = ::GetDC(hwnd);
-    UINT ydpi = ::GetDeviceCaps(hDC, LOGPIXELSY);
+    INT ydpi = ::GetDeviceCaps(hDC, LOGPIXELSY);
     ::ReleaseDC(nullptr, hDC);
 
     ::SetWindowPos(hwnd, nullptr, SCALED_SIZE(x, ydpi), SCALED_SIZE(y, ydpi),
                    SCALED_SIZE(width, ydpi), SCALED_SIZE(height, ydpi),
                    SWP_NOZORDER | SWP_NOACTIVATE);
 
-    font = io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\simsun.ttc", SCALED_SIZE(12.0f, ydpi),
-                                        NULL, io.Fonts->GetGlyphRangesChineseSimplifiedCommon());
-    IM_ASSERT(font != NULL);
+    if (FileExists(kFontName)) {
+      font = io.Fonts->AddFontFromFileTTF(kFontName, (float)SCALED_SIZE(kFontSize, ydpi),
+                                          NULL, io.Fonts->GetGlyphRangesChineseFull());
+      IM_ASSERT(font != NULL);
+    }
+    if (font == NULL && FileExists(kFontName2)) {
+      font = io.Fonts->AddFontFromFileTTF(kFontName2, (float)SCALED_SIZE(kFontSize, ydpi),
+                                          NULL, io.Fonts->GetGlyphRangesChineseFull());
+      IM_ASSERT(font != NULL);
+    }
+    if (font == NULL && FileExists(kFontName3)) {
+      font = io.Fonts->AddFontFromFileTTF(kFontName3, (float)SCALED_SIZE(kFontSize3, ydpi),
+                                          NULL, io.Fonts->GetGlyphRangesChineseSimplifiedCommon());
+      IM_ASSERT(font != NULL);
+    }
     font = io.Fonts->AddFontDefault();
     IM_ASSERT(font != NULL);
 
