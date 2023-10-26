@@ -1,9 +1,22 @@
+// SPDX-License-Identifier: MIT
+/* Copyright (c) 2022-2023 Chilledheart  */
+
+// Main code
+#include <vector>
+#include <string>
+#include <tchar.h>
+#include <stdio.h>
+
+#include <windows.h>
+
 #include "imgui.h"
 #include "imgui_impl_win32.h"
 #include "imgui_impl_dx11.h"
 #include <d3d11.h>
-#include <tchar.h>
-#include <stdio.h>
+
+#pragma comment(lib, "advapi32")
+#pragma comment(lib, "d3d11")
+#pragma comment(lib, "d3dcompiler")
 
 // Data
 static ID3D11Device*            g_pd3dDevice = NULL;
@@ -18,14 +31,6 @@ static void CreateRenderTarget();
 static void CleanupRenderTarget();
 static LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-// Main code
-#include <vector>
-#include <string>
-
-#include <windows.h>
-#pragma comment(lib, "d3d11")
-#pragma comment(lib, "d3dcompiler")
-
 static const wchar_t* genshinImpactCnPathKey = L"Software\\miHoYo\\原神";
 static const wchar_t* genshinImpactCnSdkKey = L"MIHOYOSDK_ADL_PROD_CN_h3123967166";
 static const wchar_t* genshinImpactGlobalPathKey = L"Software\\miHoYo\\Genshin Impact";
@@ -36,6 +41,7 @@ static constexpr size_t kMaxDisplayNameLength = 128U;
 static constexpr size_t kRegReadMaximumSize = 1024 * 1024;
 
 #define DEFAULT_CONFIG_FILE "GenshinImpactLoader.dat"
+#define SCALED_SIZE(X, uDpi) MulDiv(X, uDpi, 96)
 
 static bool OpenKey(HKEY *hkey, bool isWriteOnly, bool isCN) {
     DWORD disposition;
@@ -229,9 +235,16 @@ int WinMain(HINSTANCE hInstance,
     // Create application window
     ImGui_ImplWin32_EnableDpiAwareness();
 
-    WNDCLASSEX wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(NULL), NULL, NULL, NULL, NULL, _T("ImGui Example"), NULL };
-    ::RegisterClassEx(&wc);
-    HWND hwnd = ::CreateWindow(wc.lpszClassName, _T("Genshin Impact Multi Account Switch"), WS_OVERLAPPEDWINDOW, 100, 100, 600, 400, NULL, NULL, wc.hInstance, NULL);
+    WNDCLASSEXW wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L,
+      ::GetModuleHandleW(NULL), NULL, NULL, NULL, NULL,
+      _T("Genshin Impact Loader Class"), NULL };
+    ::RegisterClassExW(&wc);
+    int x = 100, y = 100;
+    int width = 450, height = 600;
+    HWND hwnd = ::CreateWindowW(wc.lpszClassName,
+                                _T("Genshin Impact Multi Account Switch"),
+                                WS_OVERLAPPEDWINDOW, x, y, width, height,
+                                NULL, NULL, wc.hInstance, NULL);
 
     // Initialize Direct3D
     if (!CreateDeviceD3D(hwnd))
@@ -277,10 +290,15 @@ int WinMain(HINSTANCE hInstance,
 
     // A quick way to get dpi (monitor-based)
     HDC hDC = ::GetDC(hwnd);
-    UINT ydpi = GetDeviceCaps(hDC, LOGPIXELSY);
+    UINT ydpi = ::GetDeviceCaps(hDC, LOGPIXELSY);
     ::ReleaseDC(nullptr, hDC);
 
-    font = io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\simsun.ttc", 12.0f * ydpi / 96, NULL, io.Fonts->GetGlyphRangesChineseSimplifiedCommon());
+    ::SetWindowPos(hwnd, nullptr, SCALED_SIZE(x, ydpi), SCALED_SIZE(y, ydpi),
+                   SCALED_SIZE(width, ydpi), SCALED_SIZE(height, ydpi),
+                   SWP_NOZORDER | SWP_NOACTIVATE);
+
+    font = io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\simsun.ttc", SCALED_SIZE(12.0f, ydpi),
+                                        NULL, io.Fonts->GetGlyphRangesChineseSimplifiedCommon());
     IM_ASSERT(font != NULL);
     font = io.Fonts->AddFontDefault();
     IM_ASSERT(font != NULL);
@@ -304,10 +322,10 @@ int WinMain(HINSTANCE hInstance,
         // Poll and handle messages (inputs, window resize, etc.)
         // See the WndProc() function below for our to dispatch events to the Win32 backend.
         MSG msg;
-        while (::PeekMessage(&msg, NULL, 0U, 0U, PM_REMOVE))
+        while (::PeekMessageW(&msg, NULL, 0U, 0U, PM_REMOVE))
         {
             ::TranslateMessage(&msg);
-            ::DispatchMessage(&msg);
+            ::DispatchMessageW(&msg);
             if (msg.message == WM_QUIT)
                 done = true;
         }
@@ -420,7 +438,7 @@ int WinMain(HINSTANCE hInstance,
 
     CleanupDeviceD3D();
     ::DestroyWindow(hwnd);
-    ::UnregisterClass(wc.lpszClassName, wc.hInstance);
+    ::UnregisterClassW(wc.lpszClassName, wc.hInstance);
 
     return 0;
 }
