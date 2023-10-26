@@ -13,6 +13,8 @@
 #include "imgui_impl_dx11.h"
 #include <d3d11.h>
 
+#include "resource.h"
+
 #pragma comment(lib, "advapi32")
 #pragma comment(lib, "d3d11")
 #pragma comment(lib, "d3dcompiler")
@@ -248,7 +250,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
     ImGui_ImplWin32_EnableDpiAwareness();
 
     WNDCLASSEXW wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L,
-      ::GetModuleHandleW(NULL), NULL, NULL, NULL, NULL,
+      hInstance, LoadIconW(hInstance, MAKEINTRESOURCEW(IDI_APPICON)), NULL, NULL, NULL,
       L"Genshin Impact Loader Class", NULL };
     ::RegisterClassExW(&wc);
     INT x = 100, y = 100;

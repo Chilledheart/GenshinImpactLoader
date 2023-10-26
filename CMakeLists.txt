@@ -94,6 +94,7 @@ add_definitions(-DWINVER=0x0601)
 add_executable(GenshinImpactLoader
   WIN32
   main.cpp
+  resource.rc
   imgui/backends/imgui_impl_win32.cpp
   imgui/backends/imgui_impl_dx11.cpp
   imgui/imgui.cpp

@@ -1,0 +1,19 @@
+#include "resource.h"
+
+#include <winuser.rh>
+#include <winresrc.h>
+
+// https://docs.microsoft.com/en-us/windows/win32/intl/code-page-identifiers
+
+/////////////////////////////////////////////////////////////////////////////
+// Unicode (UTF-8) resources
+
+#ifdef _WIN32
+#pragma code_page(65001)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+IDI_APPICON        ICON    "genshin_impact.ico"
