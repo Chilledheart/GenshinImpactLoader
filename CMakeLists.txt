@@ -43,6 +43,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 enable_language(C)
 enable_language(CXX)
 
+set(CMAKE_C_STANDARD_LIBRARIES "" CACHE STRING "" FORCE)
+set(CMAKE_CXX_STANDARD_LIBRARIES "" CACHE STRING "" FORCE)
+
+link_libraries(d3d11 d3dcompiler AdvAPI32 User32 kernel32)
+
 if (CMAKE_MSVC_CRT_LINKAGE STREQUAL "static")
   # replace /MD with /MT
   set(CompilerFlags
@@ -96,8 +101,3 @@ add_executable(GenshinImpactLoader
   imgui/imgui_tables.cpp
   imgui/imgui_widgets.cpp
   )
-
-find_library(d3d11 d3d11.lib)
-find_library(d3dcompiler d3dcompiler.lib)
-link_libraries(d3d11)
-link_libraries(d3dcompiler)
