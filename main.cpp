@@ -165,7 +165,7 @@ class Account {
         if (!WriteKey(hkey, is_cn_, false, name_))
             goto failure;
 
-        if (!WriteKey(hkey, is_cn_, true, data_))
+        if (!data_.empty() && !WriteKey(hkey, is_cn_, true, data_))
             goto failure;
 
         CloseKey(hkey);
