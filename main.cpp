@@ -369,7 +369,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
         ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
         if (ImGui::BeginTabBar("ServerTabBar", tab_bar_flags)) {
-            for (int i = 0, isGlobal = 0; i != 2; ++i, isGlobal = 1) {
+            for (int i = 0, isGlobal = 1; i != 2; ++i, isGlobal = 0) {
                 static int load = 0;
                 static int save = 0;
                 static int gone = 0;
