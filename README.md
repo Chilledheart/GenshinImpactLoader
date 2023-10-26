@@ -8,13 +8,12 @@ Genshin Impact Multi-Account Login Loader
 
 [![Windows Build](https://github.com/Chilledheart/GenshinImpactLoader/actions/workflows/publish.yml/badge.svg)](https://github.com/Chilledheart/GenshinImpactLoader/actions/workflows/publish.yml)
 
-Support CN Server/Oversea Server(aka Asia, Europe, America and SAR).
+Support Oversea Server(aka Asia, Europe, America and SAR) and 国服. 
+<img width="460" alt="snapshot" src="https://github.com/Chilledheart/GenshinImpactLoader/assets/54673341/331b7e61-75ff-47a8-ae18-15f367fdba20">
 
 Support to store/switch to Unlimited accounts other than 1 only.
 
 # Usage of Genshin Impact Loader to switch logged-in accounts
-
-<img width="460" alt="snapshot" src="https://github.com/Chilledheart/GenshinImpactLoader/assets/54673341/3a10f2fd-6cc3-4822-8c96-505d4821e1d1">
 
 1. Run `Genshin Impact Launcher` and Click `Run`.
 2. Login the 1st account in `Genshin Impact`.
