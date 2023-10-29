@@ -305,7 +305,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/ProggyTiny.ttf", 10.0f);
     // ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
-    ImFont* font;
+    ImFont* font = NULL;
 
     // A quick way to get dpi (monitor-based)
     HDC hDC = ::GetDC(hwnd);
