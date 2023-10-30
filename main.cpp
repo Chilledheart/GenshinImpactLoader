@@ -48,7 +48,7 @@ static constexpr char kFontName3[] = "C:\\Windows\\Fonts\\simsun.ttc";
 static constexpr INT kFontSize3 = 12;
 
 #define DEFAULT_CONFIG_FILE "GenshinImpactLoader.dat"
-#define SCALED_SIZE(X) (scaled_factor * float(X))
+#define SCALED_SIZE(X) int(scaled_factor * float(X))
 
 bool FileExists(LPCSTR szPath) {
     DWORD dwAttrib = GetFileAttributesA(szPath);
