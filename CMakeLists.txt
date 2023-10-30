@@ -40,9 +40,11 @@ endif()
 ## Export build compilation database if possible
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
+# Set to a modern C++ standard
+set(CMAKE_CXX_STANDARD 17)
+
 enable_language(C)
 enable_language(CXX)
-
 set(CMAKE_C_STANDARD_LIBRARIES "" CACHE STRING "" FORCE)
 set(CMAKE_CXX_STANDARD_LIBRARIES "" CACHE STRING "" FORCE)
 
