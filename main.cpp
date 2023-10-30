@@ -15,6 +15,21 @@
 
 #include "resource.h"
 
+// below definition comes from WinUser.h
+// https://docs.microsoft.com/en-us/windows/win32/hidpi/wm-dpichanged
+#ifndef WM_DPICHANGED
+#define WM_DPICHANGED 0x02E0
+#endif
+
+// Forward declare message handler from imgui_impl_win32.cpp
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+#define SCALED_SIZE(X) (scale_factor * float(X))
+#define SCALED_INT_SIZE(X) int(scale_factor * float(X))
+
+static INT font_size;
+static const char* font_name;
+
 #pragma comment(lib, "advapi32")
 #pragma comment(lib, "d3d11")
 #pragma comment(lib, "d3dcompiler")
@@ -48,7 +63,6 @@ static constexpr char kFontName3[] = "C:\\Windows\\Fonts\\simsun.ttc";
 static constexpr INT kFontSize3 = 12;
 
 #define DEFAULT_CONFIG_FILE "GenshinImpactLoader.dat"
-#define SCALED_SIZE(X) int(scaled_factor * float(X))
 
 bool FileExists(LPCSTR szPath) {
     DWORD dwAttrib = GetFileAttributesA(szPath);
@@ -245,6 +259,8 @@ void SaveAccounts(const std::vector<Account> *loadedAccounts) {
     fclose(f);
 }
 
+static void OnChangedViewport(HWND hwnd, float scale_factor, const RECT* l);
+
 // Main Code
 int WINAPI WinMain(HINSTANCE hInstance,
                    HINSTANCE hPrevInstance,
@@ -260,6 +276,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
     ::RegisterClassExW(&wc);
     INT x = 100, y = 100;
     INT width = 460, height = 400;
+    RECT l {x, y, x+width, y+height};
     HWND hwnd = ::CreateWindowW(wc.lpszClassName,
                                 L"Genshin Impact Multi Account Switch",
                                 WS_OVERLAPPEDWINDOW, x, y, width, height,
@@ -286,49 +303,43 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();
-    //ImGui::StyleColorsClassic();
 
     // Setup Platform/Renderer backends
     ImGui_ImplWin32_Init(hwnd);
     ImGui_ImplDX11_Init(g_pd3dDevice, g_pd3dDeviceContext);
 
-    // Load Fonts
-    // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
-    // - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple.
-    // - If the file cannot be loaded, the function will return NULL. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
-    // - The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
-    // - Read 'docs/FONTS.md' for more instructions and details.
-    // - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
-    //io.Fonts->AddFontDefault();
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/ProggyTiny.ttf", 10.0f);
-    // ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
+    float scale_factor = ImGui_ImplWin32_GetDpiScaleForHwnd(hwnd);
+    l.left *= scale_factor;
+    l.top *= scale_factor;
+    l.right *= scale_factor;
+    l.bottom *= scale_factor;
+    OnChangedViewport(hwnd, scale_factor, &l);
+
     ImFont* font = NULL;
 
-    float scaled_factor = ImGui_ImplWin32_GetDpiScaleForHwnd(hwnd);
-
-    ::SetWindowPos(hwnd, nullptr, SCALED_SIZE(x), SCALED_SIZE(y),
-                   SCALED_SIZE(width), SCALED_SIZE(height),
-                   SWP_NOZORDER | SWP_NOACTIVATE);
-
     if (FileExists(kFontName)) {
-      font = io.Fonts->AddFontFromFileTTF(kFontName, (float)SCALED_SIZE(kFontSize),
-                                          NULL, io.Fonts->GetGlyphRangesChineseFull());
-      IM_ASSERT(font != NULL);
+        font_name = kFontName;
+        font_size = kFontSize;
+        font = io.Fonts->AddFontFromFileTTF(font_name, (float)SCALED_SIZE(font_size),
+                                            NULL, io.Fonts->GetGlyphRangesChineseFull());
     }
     if (font == NULL && FileExists(kFontName2)) {
-      font = io.Fonts->AddFontFromFileTTF(kFontName2, (float)SCALED_SIZE(kFontSize),
-                                          NULL, io.Fonts->GetGlyphRangesChineseFull());
-      IM_ASSERT(font != NULL);
+        font_name = kFontName2;
+        font_size = kFontSize;
+        font = io.Fonts->AddFontFromFileTTF(font_name, (float)SCALED_SIZE(font_size),
+                                            NULL, io.Fonts->GetGlyphRangesChineseFull());
     }
     if (font == NULL && FileExists(kFontName3)) {
-      font = io.Fonts->AddFontFromFileTTF(kFontName3, (float)SCALED_SIZE(kFontSize3),
-                                          NULL, io.Fonts->GetGlyphRangesChineseSimplifiedCommon());
-      IM_ASSERT(font != NULL);
+        font_name = kFontName3;
+        font_size = kFontSize3;
+        font = io.Fonts->AddFontFromFileTTF(font_name, (float)SCALED_SIZE(font_size),
+                                            NULL, io.Fonts->GetGlyphRangesChineseFull());
     }
-    font = io.Fonts->AddFontDefault();
+    if (font == NULL) {
+        font_name = NULL;
+        font_size = 13;
+        font = io.Fonts->AddFontDefault();
+    }
     IM_ASSERT(font != NULL);
 
     // Our state
@@ -521,11 +532,27 @@ void CreateRenderTarget()
 
 void CleanupRenderTarget()
 {
-    if (g_mainRenderTargetView) { g_mainRenderTargetView->Release(); g_mainRenderTargetView = NULL; }
+   if (g_mainRenderTargetView) { g_mainRenderTargetView->Release(); g_mainRenderTargetView = NULL; }
 }
 
-// Forward declare message handler from imgui_impl_win32.cpp
-extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+void OnChangedViewport(HWND hwnd, float scale_factor, const RECT* rect) {
+    static float previous_scale_factor = 1.0f;
+
+    LONG x = rect->top;
+    LONG y = rect->left;
+    LONG width = (rect->right - rect->left);
+    LONG height = (rect->bottom - rect->top);
+
+    ::SetWindowPos(hwnd, nullptr, x, y, width, height,
+                   SWP_NOZORDER | SWP_NOACTIVATE);
+
+    ImGui::GetStyle().ScaleAllSizes(1.0f / previous_scale_factor);
+    ImGui::GetStyle().ScaleAllSizes(scale_factor);
+
+    previous_scale_factor = scale_factor;
+
+    // FIXME update font scale factor
+}
 
 // Win32 message handler
 // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
@@ -539,6 +566,10 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
     switch (msg)
     {
+    case WM_DPICHANGED:
+        // https://github.com/microsoft/Windows-classic-samples/blob/main/Samples/DPIAwarenessPerWindow/client/DpiAwarenessContext.cpp
+        OnChangedViewport(hWnd, HIWORD(wParam)/96.0f, reinterpret_cast<RECT*>(lParam));
+        return 0;
     case WM_SIZE:
         if (g_pd3dDevice != NULL && wParam != SIZE_MINIMIZED)
         {
