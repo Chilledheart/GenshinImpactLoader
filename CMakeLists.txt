@@ -5,7 +5,7 @@ if (CMAKE_CURRENT_BINARY_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 endif()
 
 # Select the MSVC runtime library for use by compilers targeting the MSVC ABI.
-# Use CMAKE_MSVC_CRT_LINKAGE variable internally, option: dynamic and static
+# Use MSVC_CRT_LINKAGE variable internally, option: dynamic and static
 #
 # Introduced by cmake 3.15
 # https://cmake.org/cmake/help/latest/variable/CMAKE_MSVC_RUNTIME_LIBRARY.html#variable:CMAKE_MSVC_RUNTIME_LIBRARY
@@ -15,8 +15,11 @@ if(POLICY CMP0091)
 endif()
 
 # https://docs.microsoft.com/en-us/cpp/c-runtime-library/crt-library-features?redirectedfrom=MSDN&view=msvc-170
-set(CMAKE_MSVC_CRT_LINKAGE "static" CACHE STRING "")
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUAL:${CMAKE_MSVC_CRT_LINKAGE},dynamic>:DLL>" CACHE STRING "")
+set(MSVC_CRT_LINKAGE "static" CACHE STRING "")
+if (NOT MSVC_CRT_LINKAGE STREQUAL "static" AND NOT MSVC_CRT_LINKAGE STREQUAL "dynamic")
+  message(FATAL_ERROR "MSVC_CRT_LINKAGE only accepts: dynamic or static")
+endif()
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUAL:${MSVC_CRT_LINKAGE},dynamic>:DLL>")
 
 # Defer enabling C and CXX languages.
 set(APP_NAME "GenshinImpactLoader")
@@ -45,7 +48,7 @@ set(CMAKE_CXX_STANDARD_LIBRARIES "" CACHE STRING "" FORCE)
 
 link_libraries(d3d11 d3dcompiler AdvAPI32 User32 kernel32)
 
-if (CMAKE_MSVC_CRT_LINKAGE STREQUAL "static")
+if (MSVC_CRT_LINKAGE STREQUAL "static")
   # replace /MD with /MT
   set(CompilerFlags
     CMAKE_CXX_FLAGS
@@ -72,7 +75,7 @@ endif()
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /utf-8")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /utf-8")
 
-message(STATUS "Build with MSVC ${CMAKE_MSVC_CRT_LINKAGE} CRT library")
+message(STATUS "Build with MSVC ${MSVC_CRT_LINKAGE} CRT library")
 
 ## definitions FOR CRT
 add_definitions(-D__STD_C)
