@@ -27,8 +27,8 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 #define SCALED_SIZE(X) (scale_factor * float(X))
 #define SCALED_INT_SIZE(X) int(scale_factor * float(X))
 
-static INT font_size;
-static const char* font_name;
+static INT g_font_size;
+static const char* g_font_name;
 
 #if defined(_MSC_VER)
 #pragma comment(lib, "advapi32")
@@ -313,41 +313,46 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
     // Setup viewport and fonts
     float scale_factor = ImGui_ImplWin32_GetDpiScaleForHwnd(hwnd);
+
+    ImFont* font = NULL;
+
+    if (FileExists(kFontName)) {
+        g_font_name = kFontName;
+        g_font_size = kFontSize;
+        font = io.Fonts->AddFontFromFileTTF(g_font_name, (float)SCALED_SIZE(g_font_size),
+                                            NULL, io.Fonts->GetGlyphRangesChineseFull());
+        IM_ASSERT(font != NULL);
+    }
+    if (font == NULL && FileExists(kFontName2)) {
+        g_font_name = kFontName2;
+        g_font_size = kFontSize;
+        font = io.Fonts->AddFontFromFileTTF(g_font_name, (float)SCALED_SIZE(g_font_size),
+                                            NULL, io.Fonts->GetGlyphRangesChineseFull());
+        IM_ASSERT(font != NULL);
+    }
+    if (font == NULL && FileExists(kFontName3)) {
+        g_font_name = kFontName3;
+        g_font_size = kFontSize3;
+        font = io.Fonts->AddFontFromFileTTF(g_font_name, (float)SCALED_SIZE(g_font_size),
+                                            NULL, io.Fonts->GetGlyphRangesChineseFull());
+        IM_ASSERT(font != NULL);
+    }
+    if (font == NULL) {
+        g_font_name = NULL;
+        g_font_size = 13;
+
+        ImFontConfig cfg;
+        cfg.OversampleH = cfg.OversampleV = 1, cfg.PixelSnapH = true;
+        cfg.SizePixels = SCALED_SIZE(g_font_size);
+        font = io.Fonts->AddFontDefault(&cfg);
+        IM_ASSERT(font != NULL);
+    }
+
     l.left *= scale_factor;
     l.top *= scale_factor;
     l.right *= scale_factor;
     l.bottom *= scale_factor;
     OnChangedViewport(hwnd, scale_factor, &l);
-
-    ImFont* font = NULL;
-
-    if (FileExists(kFontName)) {
-        font_name = kFontName;
-        font_size = kFontSize;
-        font = io.Fonts->AddFontFromFileTTF(font_name, (float)SCALED_SIZE(font_size),
-                                            NULL, io.Fonts->GetGlyphRangesChineseFull());
-        IM_ASSERT(font != NULL);
-    }
-    if (font == NULL && FileExists(kFontName2)) {
-        font_name = kFontName2;
-        font_size = kFontSize;
-        font = io.Fonts->AddFontFromFileTTF(font_name, (float)SCALED_SIZE(font_size),
-                                            NULL, io.Fonts->GetGlyphRangesChineseFull());
-        IM_ASSERT(font != NULL);
-    }
-    if (font == NULL && FileExists(kFontName3)) {
-        font_name = kFontName3;
-        font_size = kFontSize3;
-        font = io.Fonts->AddFontFromFileTTF(font_name, (float)SCALED_SIZE(font_size),
-                                            NULL, io.Fonts->GetGlyphRangesChineseFull());
-        IM_ASSERT(font != NULL);
-    }
-    if (font == NULL) {
-        font_name = NULL;
-        font_size = 13;
-        font = io.Fonts->AddFontDefault();
-        IM_ASSERT(font != NULL);
-    }
 
     // Our state
     std::vector<Account> loadedAccounts[2];
@@ -561,15 +566,19 @@ void OnChangedViewport(HWND hwnd, float scale_factor, const RECT* rect) {
 
     previous_scale_factor = scale_factor;
 
-    if (font_name) {
-      io.Fonts->Clear();
-      ImGui_ImplDX11_InvalidateDeviceObjects();
-
-      font = io.Fonts->AddFontFromFileTTF(font_name, (float)SCALED_SIZE(font_size),
-                                          NULL, io.Fonts->GetGlyphRangesChineseFull());
-      io.Fonts->Build();
-      assert(font->IsLoaded());
+    io.Fonts->Clear();
+    ImGui_ImplDX11_InvalidateDeviceObjects();
+    if (g_font_name) {
+        font = io.Fonts->AddFontFromFileTTF(g_font_name, (float)SCALED_SIZE(g_font_size),
+                                            NULL, io.Fonts->GetGlyphRangesChineseFull());
+    } else {
+        ImFontConfig cfg;
+        cfg.OversampleH = cfg.OversampleV = 1, cfg.PixelSnapH = true;
+        cfg.SizePixels = SCALED_SIZE(g_font_size);
+        font = io.Fonts->AddFontDefault(&cfg);
     }
+    io.Fonts->Build();
+    assert(font->IsLoaded());
 }
 
 // Win32 message handler
