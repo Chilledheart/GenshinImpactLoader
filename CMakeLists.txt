@@ -46,9 +46,13 @@ enable_language(CXX)
 set(CMAKE_C_STANDARD_LIBRARIES "" CACHE STRING "" FORCE)
 set(CMAKE_CXX_STANDARD_LIBRARIES "" CACHE STRING "" FORCE)
 
-link_libraries(d3d11 d3dcompiler AdvAPI32 User32 kernel32)
+if (MSVC)
+  link_libraries(dwmapi d3d11 d3dcompiler AdvAPI32 User32 kernel32)
+else()
+  link_libraries(dwmapi d3d11 d3dcompiler advapi32 user32 kernel32)
+endif()
 
-if (MSVC_CRT_LINKAGE STREQUAL "static")
+if (MSVC AND MSVC_CRT_LINKAGE STREQUAL "static")
   # replace /MD with /MT
   set(CompilerFlags
     CMAKE_CXX_FLAGS
@@ -72,8 +76,10 @@ if (MSVC_CRT_LINKAGE STREQUAL "static")
 endif()
 
 # source code contains utf-8 charcters
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /utf-8")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /utf-8")
+if (MSVC)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /utf-8")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /utf-8")
+endif()
 
 message(STATUS "Build with MSVC ${MSVC_CRT_LINKAGE} CRT library")
 
@@ -102,7 +108,6 @@ add_executable(${APP_NAME}
   imgui/backends/imgui_impl_win32.cpp
   imgui/backends/imgui_impl_dx11.cpp
   imgui/imgui.cpp
-  imgui/imgui_demo.cpp
   imgui/imgui_draw.cpp
   imgui/imgui_tables.cpp
   imgui/imgui_widgets.cpp

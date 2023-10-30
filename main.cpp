@@ -30,9 +30,12 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 static INT font_size;
 static const char* font_name;
 
+#if defined(_MSC_VER)
 #pragma comment(lib, "advapi32")
 #pragma comment(lib, "d3d11")
 #pragma comment(lib, "d3dcompiler")
+#pragma comment(lib, "dwmapi")
+#endif
 
 // Data
 static ID3D11Device*            g_pd3dDevice = NULL;
