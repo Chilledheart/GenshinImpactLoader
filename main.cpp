@@ -48,7 +48,7 @@ static constexpr char kFontName3[] = "C:\\Windows\\Fonts\\simsun.ttc";
 static constexpr INT kFontSize3 = 12;
 
 #define DEFAULT_CONFIG_FILE "GenshinImpactLoader.dat"
-#define SCALED_SIZE(X, uDpi) (MulDiv(X, uDpi, 96))
+#define SCALED_SIZE(X) (scaled_factor * float(X))
 
 bool FileExists(LPCSTR szPath) {
     DWORD dwAttrib = GetFileAttributesA(szPath);
@@ -307,27 +307,24 @@ int WINAPI WinMain(HINSTANCE hInstance,
     // ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
     ImFont* font = NULL;
 
-    // A quick way to get dpi (monitor-based)
-    HDC hDC = ::GetDC(hwnd);
-    INT ydpi = ::GetDeviceCaps(hDC, LOGPIXELSY);
-    ::ReleaseDC(nullptr, hDC);
+    float scaled_factor = ImGui_ImplWin32_GetDpiScaleForHwnd(hwnd);
 
-    ::SetWindowPos(hwnd, nullptr, SCALED_SIZE(x, ydpi), SCALED_SIZE(y, ydpi),
-                   SCALED_SIZE(width, ydpi), SCALED_SIZE(height, ydpi),
+    ::SetWindowPos(hwnd, nullptr, SCALED_SIZE(x), SCALED_SIZE(y),
+                   SCALED_SIZE(width), SCALED_SIZE(height),
                    SWP_NOZORDER | SWP_NOACTIVATE);
 
     if (FileExists(kFontName)) {
-      font = io.Fonts->AddFontFromFileTTF(kFontName, (float)SCALED_SIZE(kFontSize, ydpi),
+      font = io.Fonts->AddFontFromFileTTF(kFontName, (float)SCALED_SIZE(kFontSize),
                                           NULL, io.Fonts->GetGlyphRangesChineseFull());
       IM_ASSERT(font != NULL);
     }
     if (font == NULL && FileExists(kFontName2)) {
-      font = io.Fonts->AddFontFromFileTTF(kFontName2, (float)SCALED_SIZE(kFontSize, ydpi),
+      font = io.Fonts->AddFontFromFileTTF(kFontName2, (float)SCALED_SIZE(kFontSize),
                                           NULL, io.Fonts->GetGlyphRangesChineseFull());
       IM_ASSERT(font != NULL);
     }
     if (font == NULL && FileExists(kFontName3)) {
-      font = io.Fonts->AddFontFromFileTTF(kFontName3, (float)SCALED_SIZE(kFontSize3, ydpi),
+      font = io.Fonts->AddFontFromFileTTF(kFontName3, (float)SCALED_SIZE(kFontSize3),
                                           NULL, io.Fonts->GetGlyphRangesChineseSimplifiedCommon());
       IM_ASSERT(font != NULL);
     }
