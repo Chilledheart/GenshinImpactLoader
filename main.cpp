@@ -308,6 +308,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
     ImGui_ImplWin32_Init(hwnd);
     ImGui_ImplDX11_Init(g_pd3dDevice, g_pd3dDeviceContext);
 
+    // Setup viewport and fonts
     float scale_factor = ImGui_ImplWin32_GetDpiScaleForHwnd(hwnd);
     l.left *= scale_factor;
     l.top *= scale_factor;
@@ -322,25 +323,28 @@ int WINAPI WinMain(HINSTANCE hInstance,
         font_size = kFontSize;
         font = io.Fonts->AddFontFromFileTTF(font_name, (float)SCALED_SIZE(font_size),
                                             NULL, io.Fonts->GetGlyphRangesChineseFull());
+        IM_ASSERT(font != NULL);
     }
     if (font == NULL && FileExists(kFontName2)) {
         font_name = kFontName2;
         font_size = kFontSize;
         font = io.Fonts->AddFontFromFileTTF(font_name, (float)SCALED_SIZE(font_size),
                                             NULL, io.Fonts->GetGlyphRangesChineseFull());
+        IM_ASSERT(font != NULL);
     }
     if (font == NULL && FileExists(kFontName3)) {
         font_name = kFontName3;
         font_size = kFontSize3;
         font = io.Fonts->AddFontFromFileTTF(font_name, (float)SCALED_SIZE(font_size),
                                             NULL, io.Fonts->GetGlyphRangesChineseFull());
+        IM_ASSERT(font != NULL);
     }
     if (font == NULL) {
         font_name = NULL;
         font_size = 13;
         font = io.Fonts->AddFontDefault();
+        IM_ASSERT(font != NULL);
     }
-    IM_ASSERT(font != NULL);
 
     // Our state
     std::vector<Account> loadedAccounts[2];
@@ -543,6 +547,9 @@ void OnChangedViewport(HWND hwnd, float scale_factor, const RECT* rect) {
     LONG width = (rect->right - rect->left);
     LONG height = (rect->bottom - rect->top);
 
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    ImFont* font = NULL; (void)font;
+
     ::SetWindowPos(hwnd, nullptr, x, y, width, height,
                    SWP_NOZORDER | SWP_NOACTIVATE);
 
@@ -551,7 +558,15 @@ void OnChangedViewport(HWND hwnd, float scale_factor, const RECT* rect) {
 
     previous_scale_factor = scale_factor;
 
-    // FIXME update font scale factor
+    if (font_name) {
+      io.Fonts->Clear();
+      ImGui_ImplDX11_InvalidateDeviceObjects();
+
+      font = io.Fonts->AddFontFromFileTTF(font_name, (float)SCALED_SIZE(font_size),
+                                          NULL, io.Fonts->GetGlyphRangesChineseFull());
+      io.Fonts->Build();
+      assert(font->IsLoaded());
+    }
 }
 
 // Win32 message handler
