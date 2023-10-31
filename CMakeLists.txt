@@ -95,6 +95,52 @@ add_definitions(-D_SCL_SECURE_NO_DEPRECATE)
 add_definitions(-DUNICODE)
 add_definitions(-D_UNICODE)
 
+# symbol hiddens
+if (NOT MSVC)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility=hidden")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility-inlines-hidden -fvisibility=hidden")
+endif()
+
+if (NOT MSVC)
+  ## definitions
+  add_definitions(-D__STDC_CONSTANT_MACROS)
+  add_definitions(-D__STDC_FORMAT_MACROS)
+
+  ## disable rtti
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
+
+  ## disable exceptions
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions")
+else()
+  ## Disable RTTI
+  set(CompilerFlags
+      CMAKE_CXX_FLAGS
+      CMAKE_CXX_FLAGS_DEBUG
+      CMAKE_CXX_FLAGS_MINSIZEREL
+      CMAKE_CXX_FLAGS_RELEASE
+      CMAKE_CXX_FLAGS_RELWITHDEBINFO
+      CMAKE_C_FLAGS
+      CMAKE_C_FLAGS_DEBUG
+      CMAKE_C_FLAGS_MINSIZEREL
+      CMAKE_C_FLAGS_RELEASE
+      CMAKE_C_FLAGS_RELWITHDEBINFO
+      )
+  foreach(CompilerFlag ${CompilerFlags})
+    string(REPLACE "/GR" "/GR-" ${CompilerFlag} "${${CompilerFlag}}")
+  endforeach()
+
+  ## Disable RTTI
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR-")
+
+  # Disables exceptions in the STL.
+  add_definitions(-D_HAS_EXCEPTIONS=0)
+
+  ## C4530, The code uses C++ exception handling,
+  ## but /EHsc wasn't included in the compiler options
+  ## https://docs.microsoft.com/en-us/cpp/build/reference/eh-exception-handling-model?view=msvc-170
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
+endif()
+
 include_directories(imgui)
 include_directories(imgui/backends)
 
