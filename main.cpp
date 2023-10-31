@@ -188,9 +188,9 @@ int WINAPI WinMain(HINSTANCE hInstance,
         ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
         if (ImGui::BeginTabBar("ServerTabBar", tab_bar_flags)) {
             for (int i = 0, isGlobal = 1; i != 2; ++i, isGlobal = 0) {
-                static int load = 0;
-                static int save = 0;
-                static int gone = 0;
+                int load = 0;
+                int save = 0;
+                int gone = 0;
 
                 if (!ImGui::BeginTabItem(isGlobal ? u8"Global Server" : u8"国服"))
                     continue;
@@ -233,16 +233,12 @@ int WINAPI WinMain(HINSTANCE hInstance,
                     gone = 1;
 
                 if (load) {
-                    if (loadedAccounts[i][item_current].Save()) {
-                        load = 0;
-                    }
+                    (void)loadedAccounts[i][item_current].Save();
                 }
                 if (gone) {
-                    std::vector<BYTE> name(1, 0), data(1, 0);
+                    std::vector<uint8_t> name(1, 0), data(1, 0);
                     Account account(isGlobal, "Gone", name, data);
-                    if (account.Save()) {
-                        gone = 0;
-                    }
+                    (void)account.Save();
                 }
                 if (save) {
                     Account account(isGlobal, savedName[i]);
@@ -252,7 +248,6 @@ int WINAPI WinMain(HINSTANCE hInstance,
                         item_current = static_cast<int>(loadedAccounts[i].size()) - 1;
                         // save accounts to disk
                         SaveAccounts(loadedAccounts);
-                        save = 0;
                         savedName[i][0] = '\0';
                     }
                 }
