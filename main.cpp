@@ -226,7 +226,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
                         gone_selected = 1;
                 }
 
-                ImGui::InputTextWithHint(isGlobal ? u8"Save As" : u8"另保为",
+                ImGui::InputTextWithHint(isGlobal ? u8"Save As" : u8"另存为",
                                          isGlobal ? u8"enter account name" : u8"输入账号名称",
                                          savedName[i],
                                          IM_ARRAYSIZE(savedName[i]));
@@ -236,7 +236,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
                 if (ImGui::Button(isGlobal ? u8"Save" : u8"保存") && strnlen(savedName[i], sizeof(savedName[i])))
                     save = 1;
 
-                ImGui::Text(isGlobal ? u8"Wipe current logged-in account." : u8"抹去当前");
+                ImGui::Text(isGlobal ? u8"Wipe current logged-in account." : u8"抹去当前账号");
 
                 ImGui::SameLine();
 
