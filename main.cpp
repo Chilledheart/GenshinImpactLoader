@@ -217,7 +217,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
                     ImGui::ListBox(u8"accounts", &item_current, items, static_cast<int>(loadedAccountNames[i].size()), 4);
                     ImGui::SameLine();
 
-                    if (ImGui::Button(isGlobal ? u8"Save" : u8"载入"))
+                    if (ImGui::Button(isGlobal ? u8"Load" : u8"载入"))
                         load = 1;
                 }
 
