@@ -222,7 +222,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
                 ImGui::SameLine();
 
-                if (ImGui::Button(isGlobal ? u8"Save" : u8"保存") && strlen(savedName[i]))
+                if (ImGui::Button(isGlobal ? u8"Save" : u8"保存") && strnlen(savedName[i], sizeof(savedName[i])))
                     save = 1;
 
                 ImGui::Text(isGlobal ? u8"Wipe current logged-in account." : u8"抹去当前");
