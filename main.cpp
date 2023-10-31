@@ -226,9 +226,6 @@ int WINAPI WinMain(HINSTANCE hInstance,
                         gone_selected = 1;
                 }
 
-                if (refresh) {
-                    savedName[i][0] = '\0';
-                }
                 ImGui::InputTextWithHint(isGlobal ? u8"Save As" : u8"另保为",
                                          isGlobal ? u8"enter account name" : u8"输入账号名称",
                                          savedName[i],
