@@ -39,8 +39,8 @@ class Account {
     bool Save() const;
 
   private:
-    const bool is_global_;
-    const std::string display_name_;
+    bool is_global_;
+    std::string display_name_;
     std::vector<uint8_t> name_;
     std::vector<uint8_t> data_;
 };

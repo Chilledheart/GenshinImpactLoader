@@ -193,6 +193,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
                 int load = 0;
                 int save = 0;
                 int gone = 0;
+                int gone_selected = 0;
 
                 if (!ImGui::BeginTabItem(isGlobal ? u8"Global Server" : u8"国服"))
                     continue;
@@ -201,7 +202,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
                 previous_i = i;
 
                 ImGui::Text(isGlobal ? u8"Choose existing account to load or save current account."
-                            : u8"请选择加载当前或者保存当前");
+                            : u8"请选择加载当前账号或者保存当前账号");
 
                 loadedAccountNames[i].clear();
                 for (const auto& accnt : loadedAccounts[i]) {
@@ -214,22 +215,24 @@ int WINAPI WinMain(HINSTANCE hInstance,
                 }
                 if (!loadedAccounts[i].empty()) {
                     const char** items = &loadedAccountNames[i][0];
-                    ImGui::ListBox(u8"accounts", &item_current, items, static_cast<int>(loadedAccountNames[i].size()), 4);
+                    ImGui::ListBox(isGlobal ? u8"known accounts" : u8"账号列表", &item_current, items, static_cast<int>(loadedAccountNames[i].size()), 4);
+
+                    if (ImGui::Button(isGlobal ? u8"Load Selected" : u8"载入选中"))
+                        load = 1;
+
                     ImGui::SameLine();
 
-                    if (ImGui::Button(isGlobal ? u8"Load" : u8"载入"))
-                        load = 1;
+                    if (ImGui::Button(isGlobal ? u8"Wipe Selected" : u8"抹去选中"))
+                        gone_selected = 1;
                 }
 
                 if (refresh) {
                     savedName[i][0] = '\0';
                 }
-                ImGui::InputTextWithHint(isGlobal ? "(global/ hint)" : "(cn/ hint)",
-                                         isGlobal ? u8"enter account name" : u8"请输入当前名称",
+                ImGui::InputTextWithHint(isGlobal ? u8"Save As" : u8"保存",
+                                         isGlobal ? u8"enter account name" : u8"输入账号名称",
                                          savedName[i],
                                          IM_ARRAYSIZE(savedName[i]));
-
-                ImGui::Text(isGlobal ? u8"Save current account." : u8"保存当前");
 
                 ImGui::SameLine();
 
@@ -240,11 +243,19 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
                 ImGui::SameLine();
 
-                if (ImGui::Button(isGlobal ? u8"Gone" : u8"抹去"))
+                if (ImGui::Button(isGlobal ? u8"Wipe" : u8"抹去"))
                     gone = 1;
 
                 if (load) {
                     (void)loadedAccounts[i][item_current].Save();
+                }
+                if (gone_selected) {
+                    if (loadedAccounts[i].size() > item_current) {
+                        auto iter = loadedAccounts[i].begin() + item_current;
+                        loadedAccounts[i].erase(iter);
+                        // save changes to disk
+                        SaveAccounts(loadedAccounts);
+                    }
                 }
                 if (gone) {
                     std::vector<uint8_t> name(1, 0), data(1, 0);
@@ -261,7 +272,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
                         SaveAccounts(loadedAccounts);
                         savedName[i][0] = '\0';
                     } else {
-                        ::MessageBox(hwnd, isGlobal ? L"Failed to load current account" : L"无法读取当期帐号信息", L"GenshinImpactLoader", MB_OK);
+                        ::MessageBoxW(hwnd, isGlobal ? L"Failed to load current account" : L"无法读取当期帐号信息", L"GenshinImpactLoader", MB_OK);
                     }
                 }
                 ImGui::EndTabItem();
