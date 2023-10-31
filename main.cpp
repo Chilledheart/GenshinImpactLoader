@@ -187,13 +187,18 @@ int WINAPI WinMain(HINSTANCE hInstance,
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
         ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
         if (ImGui::BeginTabBar("ServerTabBar", tab_bar_flags)) {
+            static int previous_i = 0;
             for (int i = 0, isGlobal = 1; i != 2; ++i, isGlobal = 0) {
+                int refresh = 0;
                 int load = 0;
                 int save = 0;
                 int gone = 0;
 
                 if (!ImGui::BeginTabItem(isGlobal ? u8"Global Server" : u8"国服"))
                     continue;
+                if (previous_i != i)
+                    refresh = 1;
+                previous_i = i;
 
                 ImGui::Text(isGlobal ? u8"Choose existing account to load or save current account."
                             : u8"请选择加载当前或者保存当前");
@@ -204,6 +209,9 @@ int WINAPI WinMain(HINSTANCE hInstance,
                 }
 
                 static int item_current = 0;
+                if (refresh) {
+                    item_current = 0;
+                }
                 if (!loadedAccounts[i].empty()) {
                     const char** items = &loadedAccountNames[i][0];
                     ImGui::ListBox(u8"accounts", &item_current, items, static_cast<int>(loadedAccountNames[i].size()), 4);
@@ -213,6 +221,9 @@ int WINAPI WinMain(HINSTANCE hInstance,
                         load = 1;
                 }
 
+                if (refresh) {
+                    savedName[i][0] = '\0';
+                }
                 ImGui::InputTextWithHint(isGlobal ? "(global/ hint)" : "(cn/ hint)",
                                          isGlobal ? u8"enter account name" : u8"请输入当前名称",
                                          savedName[i],
@@ -249,6 +260,8 @@ int WINAPI WinMain(HINSTANCE hInstance,
                         // save accounts to disk
                         SaveAccounts(loadedAccounts);
                         savedName[i][0] = '\0';
+                    } else {
+                        ::MessageBox(hwnd, isGlobal ? L"Failed to load current account" : L"无法读取当期帐号信息", L"GenshinImpactLoader", MB_OK);
                     }
                 }
                 ImGui::EndTabItem();
