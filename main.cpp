@@ -253,6 +253,8 @@ int WINAPI WinMain(HINSTANCE hInstance,
                     if (loadedAccounts[i].size() > item_current) {
                         auto iter = loadedAccounts[i].begin() + item_current;
                         loadedAccounts[i].erase(iter);
+                        auto iter2 = loadedAccountNames[i].begin() + item_current;
+                        loadedAccountNames[i].erase(iter2);
                         // save changes to disk
                         SaveAccounts(loadedAccounts);
                     }
