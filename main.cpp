@@ -2,16 +2,17 @@
 /* Copyright (c) 2022-2023 Chilledheart  */
 
 // Main code
-#include <vector>
-#include <string>
-#include <stdio.h>
 
+#include <vector>
 #include <windows.h>
 
 #include "imgui.h"
 #include "imgui_impl_win32.h"
 #include "imgui_impl_dx11.h"
 #include <d3d11.h>
+
+#include "account.hpp"
+#include "helper.hpp"
 
 #include "resource.h"
 
@@ -31,7 +32,6 @@ static INT g_font_size;
 static const char* g_font_name;
 
 #if defined(_MSC_VER)
-#pragma comment(lib, "advapi32")
 #pragma comment(lib, "d3d11")
 #pragma comment(lib, "d3dcompiler")
 #pragma comment(lib, "dwmapi")
@@ -48,221 +48,14 @@ static bool CreateDeviceD3D(HWND hWnd);
 static void CleanupDeviceD3D();
 static void CreateRenderTarget();
 static void CleanupRenderTarget();
+static void OnChangedViewport(HWND hwnd, float scale_factor, const RECT* l);
 static LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
-static const wchar_t* genshinImpactCnPathKey = L"Software\\miHoYo\\原神";
-static const wchar_t* genshinImpactCnSdkKey = L"MIHOYOSDK_ADL_PROD_CN_h3123967166";
-static const wchar_t* genshinImpactGlobalPathKey = L"Software\\miHoYo\\Genshin Impact";
-static const wchar_t* genshinImpactGlobalSdkKey = L"MIHOYOSDK_ADL_PROD_OVERSEA_h1158948810";
-static const wchar_t* genshinImpactDataKey = L"GENERAL_DATA_h2389025596";
-
-static constexpr size_t kMaxDisplayNameLength = 128U;
-static constexpr size_t kRegReadMaximumSize = 1024 * 1024;
 
 static constexpr char kFontName[] = "C:\\Windows\\Fonts\\msyh.ttc";
 static constexpr char kFontName2[] = "C:\\Windows\\Fonts\\msyh.ttf";
 static constexpr INT kFontSize = 14;
 static constexpr char kFontName3[] = "C:\\Windows\\Fonts\\simsun.ttc";
 static constexpr INT kFontSize3 = 12;
-
-#define DEFAULT_CONFIG_FILE "GenshinImpactLoader.dat"
-
-bool FileExists(LPCSTR szPath) {
-    DWORD dwAttrib = GetFileAttributesA(szPath);
-
-    return (dwAttrib != INVALID_FILE_ATTRIBUTES &&
-           !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
-}
-
-static bool OpenKey(HKEY *hkey, bool isWriteOnly, bool isCN) {
-    DWORD disposition;
-    const wchar_t* subkey = isCN ? genshinImpactCnPathKey : genshinImpactGlobalPathKey;
-    REGSAM samDesired =
-        KEY_WOW64_64KEY | (isWriteOnly ? KEY_SET_VALUE : KEY_QUERY_VALUE);
-
-    // Creates the specified registry key. If the key already exists, the
-    // function opens it. Note that key names are not case sensitive.
-    if (::RegCreateKeyExW(
-            HKEY_CURRENT_USER /*hKey*/, subkey /* lpSubKey */, 0 /* Reserved */,
-            nullptr /*lpClass*/, REG_OPTION_NON_VOLATILE /* dwOptions */,
-            samDesired /* samDesired */, nullptr /*lpSecurityAttributes*/,
-            hkey /* phkResult */,
-            &disposition /* lpdwDisposition*/) == ERROR_SUCCESS) {
-        if (disposition == REG_CREATED_NEW_KEY) {
-        } else if (disposition == REG_OPENED_EXISTING_KEY) {
-        }
-        return true;
-    }
-    return false;
-}
-
-static bool ReadKey(HKEY hkey, bool isCN, bool isData, std::vector<BYTE>* output) {
-    const wchar_t* valueName = isData ? genshinImpactDataKey : (isCN ? genshinImpactCnSdkKey : genshinImpactGlobalSdkKey);
-    DWORD BufferSize;
-    DWORD type;
-
-    // If lpData is nullptr, and lpcbData is non-nullptr, the function returns
-    // ERROR_SUCCESS and stores the size of the data, in bytes, in the variable
-    // pointed to by lpcbData. This enables an application to determine the best
-    // way to allocate a buffer for the value's data.
-    if (::RegQueryValueExW(hkey /* HKEY */, valueName /* lpValueName */,
-                           nullptr /* lpReserved */, &type /* lpType */,
-                           nullptr /* lpData */,
-                           &BufferSize /* lpcbData */) != ERROR_SUCCESS) {
-        return false;
-    }
-
-    if (type != REG_BINARY || BufferSize > kRegReadMaximumSize) {
-        return false;
-    }
-
-    output->resize(BufferSize);
-    if (::RegQueryValueExW(hkey /* HKEY */,
-                           valueName /* lpValueName */,
-                           nullptr /* lpReserved */,
-                           &type /* lpType */,
-                           output->data() /* lpData */,
-                           &BufferSize /* lpcbData */) != ERROR_SUCCESS) {
-        return false;
-    }
-    output->reserve(BufferSize);
-    return true;
-}
-
-static bool WriteKey(HKEY hkey, bool isCN, bool isData, const std::vector<BYTE>& output) {
-    const wchar_t* valueName = isData ? genshinImpactDataKey : (isCN ? genshinImpactCnSdkKey : genshinImpactGlobalSdkKey);
-    if (::RegSetValueExW(hkey /* hKey*/,
-                         valueName /*lpValueName*/,
-                         0 /*Reserved*/,
-                         REG_BINARY /*dwType*/,
-                         output.data() /*lpData*/,
-                         static_cast<DWORD>(output.size()) /*cbData*/) == ERROR_SUCCESS) {
-        return true;
-    }
-    return false;
-}
-
-static bool CloseKey(HKEY hkey) {
-    return ::RegCloseKey(hkey);
-}
-
-class Account {
-  public:
-    Account(bool is_cn, const std::string& display_name)
-      : is_cn_(is_cn), display_name_(display_name) {}
-
-    Account(bool is_cn, const std::string& display_name,
-            const std::vector<BYTE> &name,
-            const std::vector<BYTE> &data)
-      : is_cn_(is_cn), display_name_(display_name),
-        name_(name), data_(data) {}
-
-    const std::string& display_name() const {
-      return display_name_;
-    }
-
-    const bool is_cn() const {
-      return is_cn_;
-    }
-
-    const std::vector<BYTE>& name() const {
-      return name_;
-    }
-
-    const std::vector<BYTE>& data() const {
-      return data_;
-    }
-
-    bool Load() {
-        HKEY hkey;
-        if (!OpenKey(&hkey, false, is_cn_))
-            return false;
-
-        if (!ReadKey(hkey, is_cn_, false, &name_))
-            goto failure;
-
-        if (!ReadKey(hkey, is_cn_, true, &data_))
-            goto failure;
-
-        CloseKey(hkey);
-        return true;
-
-    failure:
-        CloseKey(hkey);
-        return false;
-    }
-
-    bool Save() const {
-        HKEY hkey;
-        if (!OpenKey(&hkey, true, is_cn_))
-            return false;
-
-        if (!WriteKey(hkey, is_cn_, false, name_))
-            goto failure;
-
-        if (!data_.empty() && !WriteKey(hkey, is_cn_, true, data_))
-            goto failure;
-
-        CloseKey(hkey);
-        return true;
-
-    failure:
-        CloseKey(hkey);
-        return false;
-    }
-
-  private:
-    const bool is_cn_;
-    const std::string display_name_;
-    std::vector<BYTE> name_;
-    std::vector<BYTE> data_;
-};
-
-void LoadSavedAccounts(std::vector<Account> *loadedAccounts) {
-    FILE *f = fopen(DEFAULT_CONFIG_FILE, "r");
-    struct {
-        char name[kMaxDisplayNameLength];
-        int isGlobal;
-        char account[128];
-        char userData[128 * 1024];
-    } accnt;
-
-    if (!f)
-        return;
-
-    while (fscanf(f, "%s %d %s %s\n", accnt.name, &accnt.isGlobal, accnt.account, accnt.userData) == 4) {
-        std::string display_name = accnt.name;
-        std::vector<BYTE> name;
-        size_t len = strlen(accnt.account);
-        name.resize(len + 1, 0);
-        memcpy(name.data(), accnt.account, len);
-
-        std::vector<BYTE> data;
-        len = strlen(accnt.userData);
-        data.resize(len + 1, 0);
-        memcpy(data.data(), accnt.userData, len);
-        Account account(!accnt.isGlobal, display_name, name, data);
-
-        loadedAccounts[accnt.isGlobal != 0 ? 0 : 1].push_back(account);
-    }
-
-    fclose(f);
-}
-
-void SaveAccounts(const std::vector<Account> *loadedAccounts) {
-    FILE* f = fopen(DEFAULT_CONFIG_FILE, "w");
-    if (!f)
-        return;
-    for (int i = 0; i != 2; ++i)
-        for (const auto &account : loadedAccounts[i])
-           fprintf(f, "%s %d %s %s\n", account.display_name().c_str(),
-                   !account.is_cn(),
-                   (const char*)&account.name()[0],
-                   (const char*)&account.data()[0]);
-    fclose(f);
-}
-
-static void OnChangedViewport(HWND hwnd, float scale_factor, const RECT* l);
 
 // Main Code
 int WINAPI WinMain(HINSTANCE hInstance,
@@ -359,8 +152,8 @@ int WINAPI WinMain(HINSTANCE hInstance,
     std::vector<const char*> loadedAccountNames[2];
     static char savedName[2][kMaxDisplayNameLength];
 
-    // i = 0 -> CN Service
-    // i = 1 -> Global Service
+    // i = 0 -> Global Service
+    // i = 1 -> CN Service
     // Load saved data from disk
     LoadSavedAccounts(loadedAccounts);
 
@@ -446,13 +239,13 @@ int WINAPI WinMain(HINSTANCE hInstance,
                 }
                 if (gone) {
                     std::vector<BYTE> name(1, 0), data(1, 0);
-                    Account account(!isGlobal, "Gone", name, data);
+                    Account account(isGlobal, "Gone", name, data);
                     if (account.Save()) {
                         gone = 0;
                     }
                 }
                 if (save) {
-                    Account account(!isGlobal, savedName[i]);
+                    Account account(isGlobal, savedName[i]);
                     if (account.Load()) {
                         loadedAccounts[i].push_back(account);
                         loadedAccountNames[i].push_back(account.display_name().c_str());

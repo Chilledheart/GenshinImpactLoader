@@ -106,6 +106,8 @@ add_definitions(-DWINVER=0x0601)
 add_executable(${APP_NAME}
   WIN32
   main.cpp
+  account.cpp
+  helper.cpp
   resource.rc
   imgui/backends/imgui_impl_win32.cpp
   imgui/backends/imgui_impl_dx11.cpp
