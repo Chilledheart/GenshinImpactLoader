@@ -151,6 +151,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
     std::vector<Account> loadedAccounts[2];
     std::vector<const char*> loadedAccountNames[2];
     static char savedName[2][kMaxDisplayNameLength];
+    static int selectedAccount[2];
 
     // i = 0 -> Global Service
     // i = 1 -> CN Service
@@ -187,9 +188,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
         ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
         if (ImGui::BeginTabBar("ServerTabBar", tab_bar_flags)) {
-            static int previous_i = 0;
             for (int i = 0, isGlobal = 1; i != 2; ++i, isGlobal = 0) {
-                int refresh = 0;
                 int load = 0;
                 int save = 0;
                 int gone = 0;
@@ -197,9 +196,6 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
                 if (!ImGui::BeginTabItem(isGlobal ? u8"Global Server" : u8"国服"))
                     continue;
-                if (previous_i != i)
-                    refresh = 1;
-                previous_i = i;
 
                 ImGui::Text(isGlobal ? u8"Choose existing account to load or save current account."
                             : u8"请选择加载当前账号或者保存当前账号");
@@ -209,13 +205,9 @@ int WINAPI WinMain(HINSTANCE hInstance,
                     loadedAccountNames[i].push_back(accnt.display_name().c_str());
                 }
 
-                static int item_current = 0;
-                if (refresh) {
-                    item_current = 0;
-                }
                 if (!loadedAccounts[i].empty()) {
                     const char** items = &loadedAccountNames[i][0];
-                    ImGui::ListBox(isGlobal ? u8"known accounts" : u8"账号列表", &item_current, items, static_cast<int>(loadedAccountNames[i].size()), 4);
+                    ImGui::ListBox(isGlobal ? u8"known accounts" : u8"账号列表", &selectedAccount[i], items, static_cast<int>(loadedAccountNames[i].size()), 4);
 
                     if (ImGui::Button(isGlobal ? u8"Load Selected" : u8"载入选中"))
                         load = 1;
@@ -244,13 +236,13 @@ int WINAPI WinMain(HINSTANCE hInstance,
                     gone = 1;
 
                 if (load) {
-                    (void)loadedAccounts[i][item_current].Save();
+                    (void)loadedAccounts[i][selectedAccount[i]].Save();
                 }
                 if (gone_selected) {
-                    if (loadedAccounts[i].size() > item_current) {
-                        auto iter = loadedAccounts[i].begin() + item_current;
+                    if (loadedAccounts[i].size() > selectedAccount[i]) {
+                        auto iter = loadedAccounts[i].begin() + selectedAccount[i];
                         loadedAccounts[i].erase(iter);
-                        auto iter2 = loadedAccountNames[i].begin() + item_current;
+                        auto iter2 = loadedAccountNames[i].begin() + selectedAccount[i];
                         loadedAccountNames[i].erase(iter2);
                         // save changes to disk
                         SaveAccounts(loadedAccounts);
@@ -266,7 +258,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
                     if (account.Load()) {
                         loadedAccounts[i].push_back(account);
                         loadedAccountNames[i].push_back(account.display_name().c_str());
-                        item_current = static_cast<int>(loadedAccounts[i].size()) - 1;
+                        selectedAccount[i] = static_cast<int>(loadedAccounts[i].size()) - 1;
                         // save accounts to disk
                         SaveAccounts(loadedAccounts);
                         savedName[i][0] = '\0';
