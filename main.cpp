@@ -38,10 +38,10 @@ static const char* g_font_name;
 #endif
 
 // Data
-static ID3D11Device*            g_pd3dDevice = NULL;
-static ID3D11DeviceContext*     g_pd3dDeviceContext = NULL;
-static IDXGISwapChain*          g_pSwapChain = NULL;
-static ID3D11RenderTargetView*  g_mainRenderTargetView = NULL;
+static ID3D11Device*            g_pd3dDevice = nullptr;
+static ID3D11DeviceContext*     g_pd3dDeviceContext = nullptr;
+static IDXGISwapChain*          g_pSwapChain = nullptr;
+static ID3D11RenderTargetView*  g_mainRenderTargetView = nullptr;
 
 // Forward declarations of helper functions
 static bool CreateDeviceD3D(HWND hWnd);
@@ -67,8 +67,8 @@ int WINAPI WinMain(HINSTANCE hInstance,
     ImGui_ImplWin32_EnableDpiAwareness();
 
     WNDCLASSEXW wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L,
-      hInstance, LoadIconW(hInstance, MAKEINTRESOURCEW(IDI_APPICON)), NULL, NULL, NULL,
-      L"Genshin Impact Loader Class", NULL };
+      hInstance, LoadIconW(hInstance, MAKEINTRESOURCEW(IDI_APPICON)), nullptr, nullptr, nullptr,
+      L"Genshin Impact Loader Class", nullptr };
     ::RegisterClassExW(&wc);
     INT x = 100, y = 100;
     INT width = 460, height = 400;
@@ -76,7 +76,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
     HWND hwnd = ::CreateWindowW(wc.lpszClassName,
                                 L"Genshin Impact Multi Account Switch",
                                 WS_OVERLAPPEDWINDOW, x, y, width, height,
-                                NULL, NULL, wc.hInstance, NULL);
+                                nullptr, nullptr, wc.hInstance, nullptr);
 
     // Initialize Direct3D
     if (!CreateDeviceD3D(hwnd))
@@ -107,38 +107,38 @@ int WINAPI WinMain(HINSTANCE hInstance,
     // Setup viewport and fonts
     float scale_factor = ImGui_ImplWin32_GetDpiScaleForHwnd(hwnd);
 
-    ImFont* font = NULL;
+    ImFont* font = nullptr;
 
     if (FileExists(kFontName)) {
         g_font_name = kFontName;
         g_font_size = kFontSize;
         font = io.Fonts->AddFontFromFileTTF(g_font_name, (float)SCALED_SIZE(g_font_size),
-                                            NULL, io.Fonts->GetGlyphRangesChineseFull());
-        IM_ASSERT(font != NULL);
+                                            nullptr, io.Fonts->GetGlyphRangesChineseFull());
+        IM_ASSERT(font != nullptr);
     }
-    if (font == NULL && FileExists(kFontName2)) {
+    if (font == nullptr && FileExists(kFontName2)) {
         g_font_name = kFontName2;
         g_font_size = kFontSize;
         font = io.Fonts->AddFontFromFileTTF(g_font_name, (float)SCALED_SIZE(g_font_size),
-                                            NULL, io.Fonts->GetGlyphRangesChineseFull());
-        IM_ASSERT(font != NULL);
+                                            nullptr, io.Fonts->GetGlyphRangesChineseFull());
+        IM_ASSERT(font != nullptr);
     }
-    if (font == NULL && FileExists(kFontName3)) {
+    if (font == nullptr && FileExists(kFontName3)) {
         g_font_name = kFontName3;
         g_font_size = kFontSize3;
         font = io.Fonts->AddFontFromFileTTF(g_font_name, (float)SCALED_SIZE(g_font_size),
-                                            NULL, io.Fonts->GetGlyphRangesChineseFull());
-        IM_ASSERT(font != NULL);
+                                            nullptr, io.Fonts->GetGlyphRangesChineseFull());
+        IM_ASSERT(font != nullptr);
     }
-    if (font == NULL) {
-        g_font_name = NULL;
+    if (font == nullptr) {
+        g_font_name = nullptr;
         g_font_size = 13;
 
         ImFontConfig cfg;
         cfg.OversampleH = cfg.OversampleV = 1, cfg.PixelSnapH = true;
         cfg.SizePixels = SCALED_SIZE(g_font_size);
         font = io.Fonts->AddFontDefault(&cfg);
-        IM_ASSERT(font != NULL);
+        IM_ASSERT(font != nullptr);
     }
 
     l.left *= scale_factor;
@@ -166,7 +166,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
         // Poll and handle messages (inputs, window resize, etc.)
         // See the WndProc() function below for our to dispatch events to the Win32 backend.
         MSG msg;
-        while (::PeekMessageW(&msg, NULL, 0U, 0U, PM_REMOVE))
+        while (::PeekMessageW(&msg, nullptr, 0U, 0U, PM_REMOVE))
         {
             ::TranslateMessage(&msg);
             ::DispatchMessageW(&msg);
@@ -285,7 +285,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
         // Rendering
         ImGui::Render();
         const float clear_color_with_alpha[4] = { clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w };
-        g_pd3dDeviceContext->OMSetRenderTargets(1, &g_mainRenderTargetView, NULL);
+        g_pd3dDeviceContext->OMSetRenderTargets(1, &g_mainRenderTargetView, nullptr);
         g_pd3dDeviceContext->ClearRenderTargetView(g_mainRenderTargetView, clear_color_with_alpha);
         ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
@@ -330,7 +330,7 @@ bool CreateDeviceD3D(HWND hWnd)
     //createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
     D3D_FEATURE_LEVEL featureLevel;
     const D3D_FEATURE_LEVEL featureLevelArray[2] = { D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_0, };
-    if (D3D11CreateDeviceAndSwapChain(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, createDeviceFlags, featureLevelArray, 2, D3D11_SDK_VERSION, &sd, &g_pSwapChain, &g_pd3dDevice, &featureLevel, &g_pd3dDeviceContext) != S_OK)
+    if (D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, createDeviceFlags, featureLevelArray, 2, D3D11_SDK_VERSION, &sd, &g_pSwapChain, &g_pd3dDevice, &featureLevel, &g_pd3dDeviceContext) != S_OK)
         return false;
 
     CreateRenderTarget();
@@ -340,22 +340,22 @@ bool CreateDeviceD3D(HWND hWnd)
 void CleanupDeviceD3D()
 {
     CleanupRenderTarget();
-    if (g_pSwapChain) { g_pSwapChain->Release(); g_pSwapChain = NULL; }
-    if (g_pd3dDeviceContext) { g_pd3dDeviceContext->Release(); g_pd3dDeviceContext = NULL; }
-    if (g_pd3dDevice) { g_pd3dDevice->Release(); g_pd3dDevice = NULL; }
+    if (g_pSwapChain) { g_pSwapChain->Release(); g_pSwapChain = nullptr; }
+    if (g_pd3dDeviceContext) { g_pd3dDeviceContext->Release(); g_pd3dDeviceContext = nullptr; }
+    if (g_pd3dDevice) { g_pd3dDevice->Release(); g_pd3dDevice = nullptr; }
 }
 
 void CreateRenderTarget()
 {
     ID3D11Texture2D* pBackBuffer;
     g_pSwapChain->GetBuffer(0, IID_PPV_ARGS(&pBackBuffer));
-    g_pd3dDevice->CreateRenderTargetView(pBackBuffer, NULL, &g_mainRenderTargetView);
+    g_pd3dDevice->CreateRenderTargetView(pBackBuffer, nullptr, &g_mainRenderTargetView);
     pBackBuffer->Release();
 }
 
 void CleanupRenderTarget()
 {
-   if (g_mainRenderTargetView) { g_mainRenderTargetView->Release(); g_mainRenderTargetView = NULL; }
+   if (g_mainRenderTargetView) { g_mainRenderTargetView->Release(); g_mainRenderTargetView = nullptr; }
 }
 
 void OnChangedViewport(HWND hwnd, float scale_factor, const RECT* rect) {
@@ -367,7 +367,7 @@ void OnChangedViewport(HWND hwnd, float scale_factor, const RECT* rect) {
     LONG height = (rect->bottom - rect->top);
 
     ImGuiIO& io = ImGui::GetIO(); (void)io;
-    ImFont* font = NULL; (void)font;
+    ImFont* font = nullptr; (void)font;
 
     ::SetWindowPos(hwnd, nullptr, x, y, width, height,
                    SWP_NOZORDER | SWP_NOACTIVATE);
@@ -381,7 +381,7 @@ void OnChangedViewport(HWND hwnd, float scale_factor, const RECT* rect) {
     ImGui_ImplDX11_InvalidateDeviceObjects();
     if (g_font_name) {
         font = io.Fonts->AddFontFromFileTTF(g_font_name, (float)SCALED_SIZE(g_font_size),
-                                            NULL, io.Fonts->GetGlyphRangesChineseFull());
+                                            nullptr, io.Fonts->GetGlyphRangesChineseFull());
     } else {
         ImFontConfig cfg;
         cfg.OversampleH = cfg.OversampleV = 1, cfg.PixelSnapH = true;
@@ -409,7 +409,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         OnChangedViewport(hWnd, HIWORD(wParam)/96.0f, reinterpret_cast<RECT*>(lParam));
         return 0;
     case WM_SIZE:
-        if (g_pd3dDevice != NULL && wParam != SIZE_MINIMIZED)
+        if (g_pd3dDevice != nullptr && wParam != SIZE_MINIMIZED)
         {
             CleanupRenderTarget();
             g_pSwapChain->ResizeBuffers(0, (UINT)LOWORD(lParam), (UINT)HIWORD(lParam), DXGI_FORMAT_UNKNOWN, 0);
