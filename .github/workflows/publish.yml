@@ -40,6 +40,9 @@ jobs:
           # unshallow must come first otherwise submodule may be get unshallowed
           git fetch --tags --unshallow
           git submodule update --init --depth 1
+      - name: Install Ninja
+        run: |
+          choco install ninja
       - name: Build
         run: |
           set VCToolsVersion=14.29
@@ -49,6 +52,11 @@ jobs:
           set "VSCMD_START_DIR=%CD%"
 
           call "%vsdevcmd%" -arch=x64 -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
+
+          where cmake
+          cmake --version
+          where ninja
+          ninja --version
 
           mkdir build
           cd build && cmake -G Ninja -DCMAKE_BUILD_TYPE=%BUILD_TYPE% .. && ninja|| exit /b
