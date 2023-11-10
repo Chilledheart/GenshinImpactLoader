@@ -12,6 +12,7 @@
 #include <nlohmann/json.hpp>
 
 static const char kGenshinImpactDbFileName[] = "GenshinImpactLoader.dat";
+static const char kGenshinImpactDbBakFileName[] = "GenshinImpactLoader.dat.bak";
 static const char kGenshinImpactLevelDbFileName[] = "GenshinImpactLoader.db";
 
 using json = nlohmann::json;
@@ -145,15 +146,16 @@ void SaveAccounts(const std::vector<Account> *loadedAccounts) {
 
 void LoadSavedAccounts_Old(std::vector<Account> *loadedAccounts) {
     FILE *f = fopen(kGenshinImpactDbFileName, "r");
+
+    if (!f)
+        return;
+
     struct {
         char name[kMaxDisplayNameLength];
         int isGlobal;
         char account[128];
         char userData[128 * 1024];
     } accnt;
-
-    if (!f)
-        return;
 
     while (fscanf(f, "%s %d %s %s\n", accnt.name, &accnt.isGlobal, accnt.account, accnt.userData) == 4) {
         std::string display_name = accnt.name;
@@ -172,4 +174,6 @@ void LoadSavedAccounts_Old(std::vector<Account> *loadedAccounts) {
     }
 
     fclose(f);
+
+    ::MoveFileA(kGenshinImpactDbFileName, kGenshinImpactDbBakFileName);
 }
