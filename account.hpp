@@ -8,16 +8,22 @@
 #include <vector>
 #include <stdint.h>
 
+#include "helper.hpp"
+
 class Account {
   public:
     Account(bool is_global, const std::string& display_name)
-      : is_global_(is_global), display_name_(display_name) {}
+      : id_(Rand<uint64_t>()), is_global_(is_global), display_name_(display_name) {}
 
-    Account(bool is_global, const std::string& display_name,
+    Account(uint64_t id, bool is_global, const std::string& display_name,
             const std::vector<uint8_t> &name,
             const std::vector<uint8_t> &data)
-      : is_global_(is_global), display_name_(display_name),
+      : id_(id), is_global_(is_global), display_name_(display_name),
         name_(name), data_(data) {}
+
+    uint64_t id() const {
+      return id_;
+    }
 
     const std::string& display_name() const {
       return display_name_;
@@ -39,6 +45,7 @@ class Account {
     bool Save() const;
 
   private:
+    uint64_t id_;
     bool is_global_;
     std::string display_name_;
     std::vector<uint8_t> name_;
@@ -49,6 +56,8 @@ class Account {
 void LoadSavedAccounts(std::vector<Account> *loadedAccounts);
 // in order 0-> Global 1-> CN
 void SaveAccounts(const std::vector<Account> *loadedAccounts);
+
+void LoadSavedAccounts_Old(std::vector<Account> *loadedAccounts);
 
 constexpr size_t kMaxDisplayNameLength = 128U;
 

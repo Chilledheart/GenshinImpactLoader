@@ -92,8 +92,14 @@ add_definitions(-D_CRT_SECURE_NO_DEPRECATE)
 add_definitions(-D_SCL_SECURE_NO_DEPRECATE)
 
 ## imply unicode versions
+add_definitions(-D_WIN32)
+add_definitions(-DWIN32)
 add_definitions(-DUNICODE)
 add_definitions(-D_UNICODE)
+add_definitions(-DNOMINMAX)
+add_definitions(-DWIN32_LEAN_AND_MEAN)
+
+option(BUILD_SHARED_LIBS "Build with shared libraries." OFF)
 
 # symbol hiddens
 if (NOT MSVC)
@@ -141,13 +147,57 @@ else()
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
 endif()
 
-include_directories(imgui)
-include_directories(imgui/backends)
+if (MSVC)
+  ## Remove unreferenced data
+  set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /OPT:REF /OPT:ICF /INCREMENTAL:NO /FIXED:NO")
+  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /OPT:REF /OPT:ICF /INCREMENTAL:NO /FIXED:NO")
+
+  # Tell linker to include FIXUP information symbol data
+  set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /PROFILE")
+  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /PROFILE")
+endif()
 
 # add windows 7 support
 add_definitions(-DWINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP)
 add_definitions(-D_WIN32_WINNT=0x0601)
 add_definitions(-DWINVER=0x0601)
+
+# *****************************************************************************************
+#           imgui Library
+# *****************************************************************************************
+
+include_directories(imgui)
+include_directories(imgui/backends)
+add_library(imgui STATIC
+  imgui/backends/imgui_impl_win32.cpp
+  imgui/backends/imgui_impl_dx11.cpp
+  imgui/imgui.cpp
+  imgui/imgui_draw.cpp
+  imgui/imgui_tables.cpp
+  imgui/imgui_widgets.cpp
+)
+link_libraries(imgui)
+
+# *****************************************************************************************
+#           leveldb Library
+# *****************************************************************************************
+
+set(LEVELDB_BUILD_UTILS "OFF" CACHE STRING "")
+set(LEVELDB_BUILD_TESTS "OFF" CACHE STRING "")
+set(LEVELDB_BUILD_BENCHMARKS "OFF" CACHE STRING "")
+set(LEVELDB_INSTALL "OFF" CACHE STRING "")
+set(HAVE_CRC32C 0)
+set(HAVE_SNAPPY 0)
+set(HAVE_ZSTD 0)
+set(HAVE_TCMALLOC 0)
+add_subdirectory(leveldb)
+include_directories(leveldb/include SYSTEM)
+link_libraries(leveldb)
+
+# *****************************************************************************************
+#           json Library
+# *****************************************************************************************
+include_directories(njson/include SYSTEM)
 
 add_executable(${APP_NAME}
   WIN32
@@ -155,10 +205,4 @@ add_executable(${APP_NAME}
   account.cpp
   helper.cpp
   resource.rc
-  imgui/backends/imgui_impl_win32.cpp
-  imgui/backends/imgui_impl_dx11.cpp
-  imgui/imgui.cpp
-  imgui/imgui_draw.cpp
-  imgui/imgui_tables.cpp
-  imgui/imgui_widgets.cpp
   )

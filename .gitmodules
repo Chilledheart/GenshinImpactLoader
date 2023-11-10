@@ -1,3 +1,9 @@
 [submodule "imgui"]
 	path = imgui
 	url = https://github.com/ocornut/imgui
+[submodule "leveldb"]
+	path = leveldb
+	url = https://github.com/Chilledheart/leveldb
+[submodule "njson"]
+	path = njson
+	url = https://github.com/nlohmann/json

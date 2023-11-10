@@ -156,6 +156,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
     // i = 0 -> Global Service
     // i = 1 -> CN Service
     // Load saved data from disk
+    LoadSavedAccounts_Old(loadedAccounts);
     LoadSavedAccounts(loadedAccounts);
 
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
@@ -250,7 +251,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
                 }
                 if (gone) {
                     std::vector<uint8_t> name(1, 0), data(1, 0);
-                    Account account(isGlobal, "Gone", name, data);
+                    Account account(Rand<uint64_t>(), isGlobal, "Gone", name, data);
                     (void)account.Save();
                 }
                 if (save) {
