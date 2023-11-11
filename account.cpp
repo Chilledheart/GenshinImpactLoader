@@ -13,9 +13,61 @@
 
 static const char kGenshinImpactDbFileName[] = "GenshinImpactLoader.dat";
 static const char kGenshinImpactDbBakFileName[] = "GenshinImpactLoader.dat.bak";
-static const char kGenshinImpactLevelDbFileName[] = "GenshinImpactLoader.db";
+
+static const char kGenshinImpactDir[] = "%APPDATA%\\GenshinImpactLoader";
+static const char kGenshinImpactLevelDbFileName[] = "%APPDATA%\\GenshinImpactLoader\\GenshinImpactLoader.db";
 
 using json = nlohmann::json;
+
+static std::string ExpandUserFromStringA(const char* path, size_t path_len) {
+    // the return value is the REQUIRED number of TCHARs,
+    // including the terminating NULL character.
+    DWORD required_size = ::ExpandEnvironmentStringsA(path, nullptr, 0);
+
+    /* if failure or too many bytes required, documented in
+     * ExpandEnvironmentStringsW */
+    if (required_size == 0 || required_size > MAX_PATH) {
+        return std::string(path, path_len ? path_len - 1 : path_len);
+    }
+
+    std::string expanded_path;
+    expanded_path.resize(required_size);
+    ::ExpandEnvironmentStringsA(path, &expanded_path[0], required_size);
+    while (!expanded_path.empty() && expanded_path[expanded_path.size() - 1] == '\0') {
+        expanded_path.resize(expanded_path.size() - 1);
+    }
+
+    return expanded_path;
+}
+
+static bool IsDirectory(const std::string& path) {
+    if (path == "." || path == "..") {
+        return true;
+    }
+    BY_HANDLE_FILE_INFORMATION info;
+    HANDLE hFile = CreateFileA(path.c_str(), GENERIC_READ,
+                               FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
+    if (hFile == INVALID_HANDLE_VALUE) {
+        return false;
+    }
+    if (!::GetFileInformationByHandle(hFile, &info)) {
+        CloseHandle(hFile);
+        return false;
+    }
+    CloseHandle(hFile);
+    return info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
+}
+
+static bool CreatePrivateDirectory(const std::string& path) {
+    return ::CreateDirectoryA(path.c_str(), nullptr) == TRUE;
+}
+
+static bool EnsureCreatedDirectory(const std::string& path) {
+    if (!IsDirectory(path) && !CreatePrivateDirectory(path)) {
+        return false;
+    }
+    return true;
+}
 
 bool Account::Load() {
     HKEY hkey;
@@ -58,9 +110,9 @@ failure:
 void LoadSavedAccounts(std::vector<Account> *loadedAccounts) {
     leveldb::DB* db;
     leveldb::Options options;
-    options.create_if_missing = true;
 
-    leveldb::Status status = leveldb::DB::Open(options, kGenshinImpactLevelDbFileName, &db);
+    auto db_path = ExpandUserFromStringA(kGenshinImpactLevelDbFileName, sizeof(kGenshinImpactLevelDbFileName) - 1);
+    leveldb::Status status = leveldb::DB::Open(options, db_path, &db);
     if (!status.ok()) {
         // "Unable to open/create db" status.ToString()
         return;
@@ -119,7 +171,14 @@ void SaveAccounts(const std::vector<Account> *loadedAccounts) {
     leveldb::Options options;
     options.create_if_missing = true;
 
-    leveldb::Status status = leveldb::DB::Open(options, kGenshinImpactLevelDbFileName, &db);
+    auto dir_path = ExpandUserFromStringA(kGenshinImpactDir, sizeof(kGenshinImpactDir) - 1);
+    if (!EnsureCreatedDirectory(dir_path)) {
+        // "Unable to create directory"
+        return;
+    }
+
+    auto db_path = ExpandUserFromStringA(kGenshinImpactLevelDbFileName, sizeof(kGenshinImpactLevelDbFileName) - 1);
+    leveldb::Status status = leveldb::DB::Open(options, db_path, &db);
     if (!status.ok()) {
         // "Unable to open/create db" status.ToString()
         return;
