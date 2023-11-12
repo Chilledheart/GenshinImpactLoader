@@ -8,9 +8,9 @@ Genshin Impact Multi-Account Login Loader
 
 [![Windows Build](https://github.com/Chilledheart/GenshinImpactLoader/actions/workflows/publish.yml/badge.svg)](https://github.com/Chilledheart/GenshinImpactLoader/actions/workflows/publish.yml)
 
-Support Oversea Server(aka Europe, America, Asia and TW, HK SAR, MO SAR) and 国服. 
-<img width="460" alt="snapshot" src="https://github.com/Chilledheart/GenshinImpactLoader/assets/54673341/3fcd852d-19bb-414a-884d-5e1fbab70180">
-<img width="460" alt="snapshot" src="https://github.com/Chilledheart/GenshinImpactLoader/assets/54673341/ec781d97-30a6-4344-a090-dd3d6e681cfe">
+Support Oversea Server(aka Europe, America, Asia and TW, HK SAR, MO SAR) and 国服.
+<img width="460" alt="snapshot-en" src="https://github.com/Chilledheart/GenshinImpactLoader/assets/54673341/751f4a39-8c26-4ada-bfb3-7769c421baaa">
+<img width="460" alt="snapshot-cn" src="https://github.com/Chilledheart/GenshinImpactLoader/assets/54673341/b693a113-60ad-4ada-831f-a66e12f743f9">
 
 Support to store/switch to Unlimited accounts more than one.
 
