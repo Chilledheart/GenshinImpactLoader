@@ -150,8 +150,8 @@ int WINAPI WinMain(HINSTANCE hInstance,
     // Our state
     std::vector<Account> loadedAccounts[2];
     std::vector<const char*> loadedAccountNames[2];
-    static char savedName[2][kMaxDisplayNameLength];
-    static int selectedAccount[2];
+    char savedName[2][kMaxDisplayNameLength] = {};
+    int selectedAccount[2] = {};
 
     // i = 0 -> Global Service
     // i = 1 -> CN Service
@@ -217,6 +217,11 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
                     if (ImGui::Button(isGlobal ? u8"Wipe Selected" : u8"抹去选中"))
                         gone_selected = 1;
+
+                    ImGui::SameLine();
+
+                    if (ImGui::Button(isGlobal ? u8"View Selected" : u8"查看选中"))
+                        ImGui::OpenPopup("view-popup");
                 }
 
                 ImGui::InputTextWithHint(isGlobal ? u8"Save As" : u8"另存为",
@@ -266,6 +271,17 @@ int WINAPI WinMain(HINSTANCE hInstance,
                     } else {
                         ::MessageBoxW(hwnd, isGlobal ? L"Failed to load current account" : L"无法读取当期帐号信息", L"GenshinImpactLoader", MB_OK);
                     }
+                }
+
+                if (ImGui::BeginPopupModal("view-popup"))
+                {
+                    ImGui::Text("%s: %s", "name", loadedAccounts[i][selectedAccount[i]].display_name().c_str());
+                    ImGui::Text("%s: %s", "internal-name", loadedAccounts[i][selectedAccount[i]].name().data());
+                    ImGui::Text("%s: %s", "internal-data", loadedAccounts[i][selectedAccount[i]].data().data());
+                    if (ImGui::Button(u8"Close popup")) {
+                      ImGui::CloseCurrentPopup();
+                    }
+                    ImGui::EndPopup();
                 }
                 ImGui::EndTabItem();
             }
