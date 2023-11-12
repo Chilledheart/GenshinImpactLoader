@@ -260,7 +260,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
                     }
                 }
                 if (gone) {
-                    std::vector<uint8_t> name(1, 0), data(1, 0);
+                    std::vector<uint8_t> name(1, 0), data(0);
                     Account account(Rand<uint64_t>(), isGlobal, "Gone", name, data);
                     if (account.Save()) {
                         alert_message = isGlobal ? u8"Current Login information is wiped" : u8"当前登录信息已被移除";
