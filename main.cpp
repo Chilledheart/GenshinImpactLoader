@@ -153,6 +153,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
     std::vector<const char*> loadedAccountNames[2];
     char savedName[2][kMaxDisplayNameLength] = {};
     int selectedAccount[2] = {};
+    const char* alert_message = nullptr;
 
     // i = 0 -> Global Service
     // i = 1 -> CN Service
@@ -252,13 +253,20 @@ int WINAPI WinMain(HINSTANCE hInstance,
                         auto iter2 = loadedAccountNames[i].begin() + selectedAccount[i];
                         loadedAccountNames[i].erase(iter2);
                         // save changes to disk
-                        SaveAccounts(loadedAccounts);
+                        if (!SaveAccounts(loadedAccounts)) {
+                            alert_message = isGlobal ? u8"Failed to sync changes to disk" : u8"无法保存当前操作";
+                            ImGui::OpenPopup("alert-popup");
+                        }
                     }
                 }
                 if (gone) {
                     std::vector<uint8_t> name(1, 0), data(1, 0);
                     Account account(Rand<uint64_t>(), isGlobal, "Gone", name, data);
-                    (void)account.Save();
+                    if (account.Save()) {
+                        alert_message = isGlobal ? u8"Current Login information is wiped" : u8"当前登录信息已被移除";
+                        ImGui::OpenPopup("alert-popup");
+                    }
+
                 }
                 if (save) {
                     Account account(isGlobal, savedName[i]);
@@ -267,11 +275,25 @@ int WINAPI WinMain(HINSTANCE hInstance,
                         loadedAccountNames[i].push_back(account.display_name().c_str());
                         selectedAccount[i] = static_cast<int>(loadedAccounts[i].size()) - 1;
                         // save accounts to disk
-                        SaveAccounts(loadedAccounts);
+                        if (!SaveAccounts(loadedAccounts)) {
+                            alert_message = isGlobal ? u8"Failed to sync changes to disk" : u8"无法保存当前操作";
+                            ImGui::OpenPopup("alert-popup");
+                        }
                         savedName[i][0] = '\0';
                     } else {
-                        ::MessageBoxW(hwnd, isGlobal ? L"Failed to load current account" : L"无法读取当期帐号信息", L"GenshinImpactLoader", MB_OK);
+                        alert_message = isGlobal ? u8"Failed to load current account" : u8"无法读取当期帐号信息";
+                        ImGui::OpenPopup("alert-popup");
                     }
+                }
+
+                if (ImGui::BeginPopupModal("alert-popup"))
+                {
+                    ImGui::Text("%s", alert_message);
+                    if (ImGui::Button(u8"Okay")) {
+                        ImGui::CloseCurrentPopup();
+                        alert_message = nullptr;
+                    }
+                    ImGui::EndPopup();
                 }
 
                 if (ImGui::BeginPopupModal("view-popup"))

@@ -52,7 +52,10 @@ class Account {
       return data_json_;
     }
 
+    [[nodiscard]]
     bool Load();
+
+    [[nodiscard]]
     bool Save() const;
 
   private:
@@ -68,7 +71,8 @@ class Account {
 // in order 0-> Global 1-> CN
 void LoadSavedAccounts(std::vector<Account> *loadedAccounts);
 // in order 0-> Global 1-> CN
-void SaveAccounts(const std::vector<Account> *loadedAccounts);
+[[nodiscard]]
+bool SaveAccounts(const std::vector<Account> *loadedAccounts);
 
 void LoadSavedAccounts_Old(std::vector<Account> *loadedAccounts);
 

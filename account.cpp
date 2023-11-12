@@ -170,7 +170,8 @@ void LoadSavedAccounts(std::vector<Account> *loadedAccounts) {
     delete db;
 }
 
-void SaveAccounts(const std::vector<Account> *loadedAccounts) {
+[[nodiscard]]
+bool SaveAccounts(const std::vector<Account> *loadedAccounts) {
     leveldb::DB* db;
     leveldb::Options options;
     options.create_if_missing = true;
@@ -178,14 +179,14 @@ void SaveAccounts(const std::vector<Account> *loadedAccounts) {
     auto dir_path = ExpandUserFromStringA(kGenshinImpactDir, sizeof(kGenshinImpactDir) - 1);
     if (!EnsureCreatedDirectory(dir_path)) {
         // "Unable to create directory"
-        return;
+        return false;
     }
 
     auto db_path = ExpandUserFromStringA(kGenshinImpactLevelDbFileName, sizeof(kGenshinImpactLevelDbFileName) - 1);
     leveldb::Status status = leveldb::DB::Open(options, db_path, &db);
     if (!status.ok()) {
         // "Unable to open/create db" status.ToString()
-        return;
+        return false;
     }
 
     leveldb::WriteOptions writeOptions;
@@ -205,6 +206,8 @@ void SaveAccounts(const std::vector<Account> *loadedAccounts) {
     }
 
     delete db;
+
+    return true;
 }
 
 void LoadSavedAccounts_Old(std::vector<Account> *loadedAccounts) {
