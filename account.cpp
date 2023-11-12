@@ -50,18 +50,10 @@ static bool IsDirectory(const std::string& path) {
     if (path == "." || path == "..") {
         return true;
     }
-    BY_HANDLE_FILE_INFORMATION info;
-    HANDLE hFile = CreateFileA(path.c_str(), GENERIC_READ,
-                               FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
-    if (hFile == INVALID_HANDLE_VALUE) {
-        return false;
-    }
-    if (!::GetFileInformationByHandle(hFile, &info)) {
-        CloseHandle(hFile);
-        return false;
-    }
-    CloseHandle(hFile);
-    return info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
+
+    DWORD dwAttrib = GetFileAttributesA(path.c_str());
+    return (dwAttrib != INVALID_FILE_ATTRIBUTES &&
+             (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
 }
 
 static bool CreatePrivateDirectory(const std::string& path) {
@@ -69,10 +61,7 @@ static bool CreatePrivateDirectory(const std::string& path) {
 }
 
 static bool EnsureCreatedDirectory(const std::string& path) {
-    if (!IsDirectory(path) && !CreatePrivateDirectory(path)) {
-        return false;
-    }
-    return true;
+    return IsDirectory(path) || CreatePrivateDirectory(path);
 }
 
 bool Account::Load() {
