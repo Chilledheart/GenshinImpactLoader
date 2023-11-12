@@ -15,6 +15,9 @@
 #include "account.hpp"
 #include "helper.hpp"
 
+static const char kGenshinImpactDir[] = "%APPDATA%\\GenshinImpactLoader";
+static const char kGenshinImpactImGuiIniFileName[] = "%APPDATA%\\GenshinImpactLoader\\imgui.ini";
+
 #include "resource.h"
 
 // below definition comes from WinUser.h
@@ -97,6 +100,15 @@ int WINAPI WinMain(HINSTANCE hInstance,
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+    // Setup ImGui Ini File
+    auto dir_path = ExpandUserFromStringA(kGenshinImpactDir, sizeof(kGenshinImpactDir) - 1);
+    if (EnsureCreatedDirectory(dir_path)) {
+        static auto ini_path = ExpandUserFromStringA(kGenshinImpactImGuiIniFileName, sizeof(kGenshinImpactImGuiIniFileName) - 1);
+        io.IniFilename = ini_path.c_str();
+    } else {
+        io.IniFilename = nullptr;
+    }
 
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();

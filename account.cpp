@@ -25,45 +25,6 @@ static const char kGenshinImpactLevelDbFileName[] = "%APPDATA%\\GenshinImpactLoa
 
 using json = nlohmann::json;
 
-static std::string ExpandUserFromStringA(const char* path, size_t path_len) {
-    // the return value is the REQUIRED number of TCHARs,
-    // including the terminating NULL character.
-    DWORD required_size = ::ExpandEnvironmentStringsA(path, nullptr, 0);
-
-    /* if failure or too many bytes required, documented in
-     * ExpandEnvironmentStringsW */
-    if (required_size == 0 || required_size > MAX_PATH) {
-        return std::string(path, path_len ? path_len - 1 : path_len);
-    }
-
-    std::string expanded_path;
-    expanded_path.resize(required_size);
-    ::ExpandEnvironmentStringsA(path, &expanded_path[0], required_size);
-    while (!expanded_path.empty() && expanded_path[expanded_path.size() - 1] == '\0') {
-        expanded_path.resize(expanded_path.size() - 1);
-    }
-
-    return expanded_path;
-}
-
-static bool IsDirectory(const std::string& path) {
-    if (path == "." || path == "..") {
-        return true;
-    }
-
-    DWORD dwAttrib = GetFileAttributesA(path.c_str());
-    return (dwAttrib != INVALID_FILE_ATTRIBUTES &&
-             (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
-}
-
-static bool CreatePrivateDirectory(const std::string& path) {
-    return ::CreateDirectoryA(path.c_str(), nullptr) == TRUE;
-}
-
-static bool EnsureCreatedDirectory(const std::string& path) {
-    return IsDirectory(path) || CreatePrivateDirectory(path);
-}
-
 bool Account::Load() {
     HKEY hkey;
     if (!OpenKey(&hkey, false,
