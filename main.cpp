@@ -10,6 +10,7 @@
 #include "imgui_impl_win32.h"
 #include "imgui_impl_dx11.h"
 #include <d3d11.h>
+#include <sstream>
 
 #include "account.hpp"
 #include "helper.hpp"
@@ -275,11 +276,16 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
                 if (ImGui::BeginPopupModal("view-popup"))
                 {
-                    ImGui::Text("%s: %s", "name", loadedAccounts[i][selectedAccount[i]].display_name().c_str());
-                    ImGui::Text("%s: %s", "internal-name", loadedAccounts[i][selectedAccount[i]].name().data());
-                    ImGui::Text("%s: %s", "internal-data", loadedAccounts[i][selectedAccount[i]].data().data());
                     if (ImGui::Button(u8"Close popup")) {
                       ImGui::CloseCurrentPopup();
+                    }
+                    ImGui::Text("%s: %s", "[display name]", loadedAccounts[i][selectedAccount[i]].display_name().c_str());
+                    ImGui::Text("%s: %s", "[key]", loadedAccounts[i][selectedAccount[i]].name().data());
+                    const nlohmann::json &data_json = loadedAccounts[i][selectedAccount[i]].data_json();
+                    for (auto& [key, val] : data_json.items()) {
+                        std::ostringstream os;
+                        os << val;
+                        ImGui::Text("%s: %s", key.c_str(), os.str().c_str());
                     }
                     ImGui::EndPopup();
                 }

@@ -88,6 +88,11 @@ bool Account::Load() {
     if (!ReadKey(hkey, kGenshinImpactDataKey, &data_))
         goto failure;
 
+    if (!data_.empty()) {
+        std::string slice = reinterpret_cast<const char*>(&data_[0]);
+        data_json_ = nlohmann::json::parse(slice, nullptr, false);
+    }
+
     CloseKey(hkey);
     return true;
 

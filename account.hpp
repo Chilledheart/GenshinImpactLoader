@@ -10,6 +10,8 @@
 
 #include "helper.hpp"
 
+#include <nlohmann/json.hpp>
+
 class Account {
   public:
     Account(bool is_global, const std::string& display_name)
@@ -19,7 +21,12 @@ class Account {
             const std::vector<uint8_t> &name,
             const std::vector<uint8_t> &data)
       : id_(id), is_global_(is_global), display_name_(display_name),
-        name_(name), data_(data) {}
+        name_(name), data_(data) {
+        if (!data.empty()) {
+            std::string slice = reinterpret_cast<const char*>(&data[0]);
+            data_json_ = nlohmann::json::parse(slice, nullptr, false);
+        }
+    }
 
     uint64_t id() const {
       return id_;
@@ -41,6 +48,10 @@ class Account {
       return data_;
     }
 
+    const nlohmann::json& data_json() const {
+      return data_json_;
+    }
+
     bool Load();
     bool Save() const;
 
@@ -50,6 +61,8 @@ class Account {
     std::string display_name_;
     std::vector<uint8_t> name_;
     std::vector<uint8_t> data_;
+
+    nlohmann::json data_json_;
 };
 
 // in order 0-> Global 1-> CN
