@@ -11,6 +11,12 @@
 #include <leveldb/db.h>
 #include <nlohmann/json.hpp>
 
+static const wchar_t* kGenshinImpactCnPathKey = L"Software\\miHoYo\\原神";
+static const wchar_t* kGenshinImpactCnSdkKey = L"MIHOYOSDK_ADL_PROD_CN_h3123967166";
+static const wchar_t* kGenshinImpactGlobalPathKey = L"Software\\miHoYo\\Genshin Impact";
+static const wchar_t* kGenshinImpactGlobalSdkKey = L"MIHOYOSDK_ADL_PROD_OVERSEA_h1158948810";
+static const wchar_t* kGenshinImpactDataKey = L"GENERAL_DATA_h2389025596";
+
 static const char kGenshinImpactDbFileName[] = "GenshinImpactLoader.dat";
 static const char kGenshinImpactDbBakFileName[] = "GenshinImpactLoader.dat.bak";
 
@@ -71,13 +77,15 @@ static bool EnsureCreatedDirectory(const std::string& path) {
 
 bool Account::Load() {
     HKEY hkey;
-    if (!OpenKey(&hkey, false, is_global_))
+    if (!OpenKey(&hkey, false,
+                 (is_global_ ? kGenshinImpactGlobalPathKey : kGenshinImpactCnPathKey)))
         return false;
 
-    if (!ReadKey(hkey, is_global_, false, &name_))
+    if (!ReadKey(hkey,
+                 (is_global_ ? kGenshinImpactGlobalSdkKey : kGenshinImpactCnSdkKey), &name_))
         goto failure;
 
-    if (!ReadKey(hkey, is_global_, true, &data_))
+    if (!ReadKey(hkey, kGenshinImpactDataKey, &data_))
         goto failure;
 
     CloseKey(hkey);
@@ -90,13 +98,15 @@ failure:
 
 bool Account::Save() const {
     HKEY hkey;
-    if (!OpenKey(&hkey, true, is_global_))
+    if (!OpenKey(&hkey, true,
+                 (is_global_ ? kGenshinImpactGlobalPathKey : kGenshinImpactCnPathKey)))
         return false;
 
-    if (!WriteKey(hkey, is_global_, false, name_))
+    if (!WriteKey(hkey,
+                  (is_global_ ? kGenshinImpactGlobalSdkKey : kGenshinImpactCnSdkKey), name_))
         goto failure;
 
-    if (!data_.empty() && !WriteKey(hkey, is_global_, true, data_))
+    if (!data_.empty() && !WriteKey(hkey, kGenshinImpactDataKey, data_))
         goto failure;
 
     CloseKey(hkey);

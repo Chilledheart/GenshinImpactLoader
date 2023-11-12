@@ -14,12 +14,6 @@
 #pragma comment(lib, "advapi32")
 #endif
 
-static const wchar_t* kGenshinImpactCnPathKey = L"Software\\miHoYo\\原神";
-static const wchar_t* kGenshinImpactCnSdkKey = L"MIHOYOSDK_ADL_PROD_CN_h3123967166";
-static const wchar_t* kGenshinImpactGlobalPathKey = L"Software\\miHoYo\\Genshin Impact";
-static const wchar_t* kGenshinImpactGlobalSdkKey = L"MIHOYOSDK_ADL_PROD_OVERSEA_h1158948810";
-static const wchar_t* kGenshinImpactDataKey = L"GENERAL_DATA_h2389025596";
-
 static constexpr size_t kRegReadMaximumSize = 1024 * 1024;
 
 static_assert(sizeof(BYTE) == sizeof(uint8_t));
@@ -32,9 +26,8 @@ bool FileExists(LPCSTR szPath) {
            !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
 }
 
-bool OpenKey(HKEY *hkey, bool isWriteOnly, bool isGlobal) {
+bool OpenKey(HKEY *hkey, bool isWriteOnly, const wchar_t* subkey) {
     DWORD disposition;
-    const wchar_t* subkey = isGlobal ? kGenshinImpactGlobalPathKey : kGenshinImpactCnPathKey;
     REGSAM samDesired =
         KEY_WOW64_64KEY | (isWriteOnly ? KEY_SET_VALUE : KEY_QUERY_VALUE);
 
@@ -54,8 +47,7 @@ bool OpenKey(HKEY *hkey, bool isWriteOnly, bool isGlobal) {
     return false;
 }
 
-bool ReadKey(HKEY hkey, bool isGlobal, bool isData, std::vector<uint8_t>* output) {
-    const wchar_t* valueName = isData ? kGenshinImpactDataKey : (isGlobal ? kGenshinImpactGlobalSdkKey : kGenshinImpactCnSdkKey);
+bool ReadKey(HKEY hkey, const wchar_t *valueName, std::vector<uint8_t>* output) {
     DWORD BufferSize;
     DWORD type;
 
@@ -87,8 +79,7 @@ bool ReadKey(HKEY hkey, bool isGlobal, bool isData, std::vector<uint8_t>* output
     return true;
 }
 
-bool WriteKey(HKEY hkey, bool isGlobal, bool isData, const std::vector<uint8_t>& output) {
-    const wchar_t* valueName = isData ? kGenshinImpactDataKey : (isGlobal ? kGenshinImpactGlobalSdkKey : kGenshinImpactCnSdkKey);
+bool WriteKey(HKEY hkey, const wchar_t *valueName, const std::vector<uint8_t>& output) {
     if (::RegSetValueExW(hkey /* hKey*/,
                          valueName /*lpValueName*/,
                          0 /*Reserved*/,
