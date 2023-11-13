@@ -17,6 +17,7 @@
 
 static const char kGenshinImpactDir[] = "%APPDATA%\\GenshinImpactLoader";
 static const char kGenshinImpactImGuiIniFileName[] = "%APPDATA%\\GenshinImpactLoader\\imgui.ini";
+static const char kGenshinImpactLevelDbFileName[] = "%APPDATA%\\GenshinImpactLoader\\GenshinImpactLoader.db";
 
 #include "resource.h"
 
@@ -160,6 +161,9 @@ int WINAPI WinMain(HINSTANCE hInstance,
     l.bottom *= scale_factor;
     OnChangedViewport(hwnd, scale_factor, &l);
 
+     // Main loop
+    bool done = false;
+
     // Our state
     std::vector<Account> loadedAccounts[2];
     std::vector<const char*> loadedAccountNames[2];
@@ -167,16 +171,26 @@ int WINAPI WinMain(HINSTANCE hInstance,
     int selectedAccount[2] = {};
     const char* alert_message = nullptr;
 
+    // Setup DB
+    auto db_path = ExpandUserFromStringA(kGenshinImpactLevelDbFileName, sizeof(kGenshinImpactLevelDbFileName) - 1);
+    leveldb::DB* db = OpenDb(db_path);
+    if (!EnsureCreatedDirectory(dir_path)) {
+        // "Unable to create directory"
+        ::MessageBoxW(hwnd, L"Failed to Open %appdata% Directory", L"GenshinImpactLoader", MB_OK);
+        goto cleanup;
+    }
+    if (!db) {
+        ::MessageBoxW(hwnd, L"Failed to Open DB", L"GenshinImpactLoader", MB_OK);
+        goto cleanup;
+    }
+
+    // Load DB to Memory
     // i = 0 -> Global Service
     // i = 1 -> CN Service
     // Load saved data from disk
     LoadSavedAccounts_Old(loadedAccounts);
-    LoadSavedAccounts(loadedAccounts);
+    LoadSavedAccounts(db, loadedAccounts);
 
-    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-
-     // Main loop
-    bool done = false;
     while (!done)
     {
         // Poll and handle messages (inputs, window resize, etc.)
@@ -256,16 +270,20 @@ int WINAPI WinMain(HINSTANCE hInstance,
                     gone = 1;
 
                 if (load) {
-                    (void)loadedAccounts[i][selectedAccount[i]].Save();
+                    if (!loadedAccounts[i][selectedAccount[i]].Save()) {
+                        alert_message = isGlobal ? u8"Failed to save current account" : u8"无法写入当期帐号信息";
+                        ImGui::OpenPopup("alert-popup");
+                    }
                 }
                 if (gone_selected) {
                     if (loadedAccounts[i].size() > selectedAccount[i]) {
-                        auto iter = loadedAccounts[i].begin() + selectedAccount[i];
-                        loadedAccounts[i].erase(iter);
-                        auto iter2 = loadedAccountNames[i].begin() + selectedAccount[i];
-                        loadedAccountNames[i].erase(iter2);
                         // save changes to disk
-                        if (!SaveAccounts(loadedAccounts)) {
+                        if (WipeAccountToDb(db, loadedAccounts[i][selectedAccount[i]])) {
+                            auto iter = loadedAccounts[i].begin() + selectedAccount[i];
+                            loadedAccounts[i].erase(iter);
+                            auto iter2 = loadedAccountNames[i].begin() + selectedAccount[i];
+                            loadedAccountNames[i].erase(iter2);
+                        } else {
                             alert_message = isGlobal ? u8"Failed to sync changes to disk" : u8"无法保存当前操作";
                             ImGui::OpenPopup("alert-popup");
                         }
@@ -282,19 +300,20 @@ int WINAPI WinMain(HINSTANCE hInstance,
                 }
                 if (save) {
                     Account account(isGlobal, savedName[i]);
-                    if (account.Load()) {
-                        loadedAccounts[i].push_back(account);
-                        loadedAccountNames[i].push_back(account.display_name().c_str());
-                        selectedAccount[i] = static_cast<int>(loadedAccounts[i].size()) - 1;
+                    if (!account.Load()) {
+                        alert_message = isGlobal ? u8"Failed to load current account" : u8"无法读取当期帐号信息";
+                        ImGui::OpenPopup("alert-popup");
+                    } else {
                         // save accounts to disk
-                        if (!SaveAccounts(loadedAccounts)) {
+                        if (SaveAccountToDb(db, account)) {
+                            loadedAccounts[i].push_back(account);
+                            loadedAccountNames[i].push_back(account.display_name().c_str());
+                            selectedAccount[i] = static_cast<int>(loadedAccounts[i].size()) - 1;
+                            savedName[i][0] = '\0';
+                        } else {
                             alert_message = isGlobal ? u8"Failed to sync changes to disk" : u8"无法保存当前操作";
                             ImGui::OpenPopup("alert-popup");
                         }
-                        savedName[i][0] = '\0';
-                    } else {
-                        alert_message = isGlobal ? u8"Failed to load current account" : u8"无法读取当期帐号信息";
-                        ImGui::OpenPopup("alert-popup");
                     }
                 }
 
@@ -311,7 +330,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
                 if (ImGui::BeginPopupModal("view-popup"))
                 {
                     if (ImGui::Button(u8"Close popup")) {
-                      ImGui::CloseCurrentPopup();
+                        ImGui::CloseCurrentPopup();
                     }
                     ImGui::Text("%s: %s", "[display name]", loadedAccounts[i][selectedAccount[i]].display_name().c_str());
                     ImGui::Text("%s: %s", "[key]", loadedAccounts[i][selectedAccount[i]].name().data());
@@ -333,6 +352,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
         // Rendering
         ImGui::Render();
+        ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
         const float clear_color_with_alpha[4] = { clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w };
         g_pd3dDeviceContext->OMSetRenderTargets(1, &g_mainRenderTargetView, nullptr);
         g_pd3dDeviceContext->ClearRenderTargetView(g_mainRenderTargetView, clear_color_with_alpha);
@@ -342,6 +362,9 @@ int WINAPI WinMain(HINSTANCE hInstance,
         //g_pSwapChain->Present(0, 0); // Present without vsync
     }
 
+    CloseDb(db);
+
+cleanup:
     // Cleanup
     ImGui_ImplDX11_Shutdown();
     ImGui_ImplWin32_Shutdown();

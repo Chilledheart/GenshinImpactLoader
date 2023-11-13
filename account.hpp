@@ -68,11 +68,20 @@ class Account {
     nlohmann::json data_json_;
 };
 
+namespace leveldb {
+class DB;
+}
+
+leveldb::DB* OpenDb(const std::string& db_path);
+void CloseDb(leveldb::DB* db);
+
 // in order 0-> Global 1-> CN
-void LoadSavedAccounts(std::vector<Account> *loadedAccounts);
-// in order 0-> Global 1-> CN
+void LoadSavedAccounts(leveldb::DB* db, std::vector<Account> *loadedAccounts);
+
 [[nodiscard]]
-bool SaveAccounts(const std::vector<Account> *loadedAccounts);
+bool WipeAccountToDb(leveldb::DB* db, const Account &account);
+[[nodiscard]]
+bool SaveAccountToDb(leveldb::DB* db, const Account &account);
 
 void LoadSavedAccounts_Old(std::vector<Account> *loadedAccounts);
 

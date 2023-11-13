@@ -20,9 +20,6 @@ static const wchar_t* kGenshinImpactDataKey = L"GENERAL_DATA_h2389025596";
 static const char kGenshinImpactDbFileName[] = "GenshinImpactLoader.dat";
 static const char kGenshinImpactDbBakFileName[] = "GenshinImpactLoader.dat.bak";
 
-static const char kGenshinImpactDir[] = "%APPDATA%\\GenshinImpactLoader";
-static const char kGenshinImpactLevelDbFileName[] = "%APPDATA%\\GenshinImpactLoader\\GenshinImpactLoader.db";
-
 using json = nlohmann::json;
 
 bool Account::Load() {
@@ -72,17 +69,24 @@ failure:
     return false;
 }
 
-void LoadSavedAccounts(std::vector<Account> *loadedAccounts) {
+leveldb::DB* OpenDb(const std::string& db_path) {
     leveldb::DB* db;
     leveldb::Options options;
+    options.create_if_missing = true;
 
-    auto db_path = ExpandUserFromStringA(kGenshinImpactLevelDbFileName, sizeof(kGenshinImpactLevelDbFileName) - 1);
     leveldb::Status status = leveldb::DB::Open(options, db_path, &db);
     if (!status.ok()) {
         // "Unable to open/create db" status.ToString()
-        return;
+        return nullptr;
     }
+    return db;
+}
 
+void CloseDb(leveldb::DB* db) {
+    delete db;
+}
+
+void LoadSavedAccounts(leveldb::DB* db, std::vector<Account> *loadedAccounts) {
     // Iterate over each item in the database and print them
     leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
 
@@ -128,47 +132,37 @@ void LoadSavedAccounts(std::vector<Account> *loadedAccounts) {
     }
 
     delete it;
-    delete db;
 }
 
 [[nodiscard]]
-bool SaveAccounts(const std::vector<Account> *loadedAccounts) {
-    leveldb::DB* db;
-    leveldb::Options options;
-    options.create_if_missing = true;
-
-    auto dir_path = ExpandUserFromStringA(kGenshinImpactDir, sizeof(kGenshinImpactDir) - 1);
-    if (!EnsureCreatedDirectory(dir_path)) {
-        // "Unable to create directory"
-        return false;
-    }
-
-    auto db_path = ExpandUserFromStringA(kGenshinImpactLevelDbFileName, sizeof(kGenshinImpactLevelDbFileName) - 1);
-    leveldb::Status status = leveldb::DB::Open(options, db_path, &db);
-    if (!status.ok()) {
-        // "Unable to open/create db" status.ToString()
-        return false;
-    }
-
+bool WipeAccountToDb(leveldb::DB* db, const Account &account) {
     leveldb::WriteOptions writeOptions;
-    for (int i = 0; i != 2; ++i) {
-        for (const auto& account : loadedAccounts[i]) {
-          std::string name = (const char*)&account.name()[0];
-          std::string data = (const char*)&account.data()[0];
-          json root;
-          root["id"] = account.id();
-          root["display_name"] = account.display_name();
-          root["is_global"] = account.is_global();
-          root["name"] = name;
-          root["data"] = data;
+    leveldb::Status status;
 
-          db->Put(writeOptions, std::to_string(account.id()), root.dump());
-        }
-    }
+    writeOptions.sync = true;
+    status = db->Delete(writeOptions, std::to_string(account.id()));
 
-    delete db;
+    return status.ok();
+}
 
-    return true;
+[[nodiscard]]
+bool SaveAccountToDb(leveldb::DB* db, const Account &account) {
+    leveldb::WriteOptions writeOptions;
+    leveldb::Status status;
+
+    std::string name = (const char*)&account.name()[0];
+    std::string data = (const char*)&account.data()[0];
+    json root;
+    root["id"] = account.id();
+    root["display_name"] = account.display_name();
+    root["is_global"] = account.is_global();
+    root["name"] = name;
+    root["data"] = data;
+
+    writeOptions.sync = true;
+    status = db->Put(writeOptions, std::to_string(account.id()), root.dump());
+
+    return status.ok();
 }
 
 void LoadSavedAccounts_Old(std::vector<Account> *loadedAccounts) {
