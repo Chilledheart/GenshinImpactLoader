@@ -48,6 +48,25 @@ enable_language(CXX)
 set(CMAKE_C_STANDARD_LIBRARIES "" CACHE STRING "" FORCE)
 set(CMAKE_CXX_STANDARD_LIBRARIES "" CACHE STRING "" FORCE)
 
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
+    CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+  set(COMPILER_CLANG TRUE)
+else()
+  set(COMPILER_CLANG FALSE)
+endif()
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  set(COMPILER_GCC TRUE)
+else()
+  set(COMPILER_GCC FALSE)
+endif()
+
+if (MSVC AND NOT COMPILER_CLANG)
+  set(COMPILER_MSVC TRUE)
+else()
+  set(COMPILER_MSVC FALSE)
+endif()
+
 if (MSVC)
   link_libraries(dwmapi d3d11 d3dcompiler AdvAPI32 User32 kernel32)
 else()
@@ -155,6 +174,11 @@ if (MSVC)
   # Tell linker to include FIXUP information symbol data
   set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /PROFILE")
   set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /PROFILE")
+endif()
+
+if (COMPILER_GCC OR COMPILER_CLANG)
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--icf=all")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--icf=all")
 endif()
 
 # add windows 7 support
