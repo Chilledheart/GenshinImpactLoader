@@ -83,7 +83,9 @@ leveldb::DB* OpenDb(const std::string& db_path) {
 }
 
 void CloseDb(leveldb::DB* db) {
-    delete db;
+    if (db) {
+        delete db;
+    }
 }
 
 void LoadSavedAccounts(leveldb::DB* db, std::vector<Account> *loadedAccounts) {

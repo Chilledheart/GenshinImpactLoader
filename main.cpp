@@ -36,6 +36,9 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 static INT g_font_size;
 static std::string g_font_name;
 
+static leveldb::DB* g_db = nullptr;
+static std::vector<Account> g_loadedAccounts[2];
+
 #if defined(_MSC_VER)
 #pragma comment(lib, "d3d11")
 #pragma comment(lib, "d3dcompiler")
@@ -54,6 +57,7 @@ static void CleanupDeviceD3D();
 static void CreateRenderTarget();
 static void CleanupRenderTarget();
 static void OnChangedViewport(HWND hwnd, float scale_factor, const RECT* l);
+static void LoadAccountsFromDisk(HWND hwnd);
 static LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 static constexpr wchar_t kFontName[] = L"C:\\Windows\\Fonts\\msyh.ttc";
@@ -61,6 +65,43 @@ static constexpr wchar_t kFontName2[] = L"C:\\Windows\\Fonts\\msyh.ttf";
 static constexpr INT kFontSize = 14;
 static constexpr wchar_t kFontName3[] = L"C:\\Windows\\Fonts\\simsun.ttc";
 static constexpr INT kFontSize3 = 12;
+
+static void SetupFonts(float scale_factor) {
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+    ImFont* font = nullptr;
+    if (FileExists(kFontName)) {
+        g_font_name = SysWideToUTF8(kFontName);
+        g_font_size = kFontSize;
+        font = io.Fonts->AddFontFromFileTTF(g_font_name.c_str(), (float)SCALED_SIZE(g_font_size),
+                                            nullptr, io.Fonts->GetGlyphRangesChineseFull());
+        IM_ASSERT(font != nullptr);
+    }
+    if (font == nullptr && FileExists(kFontName2)) {
+        g_font_name = SysWideToUTF8(kFontName2);
+        g_font_size = kFontSize;
+        font = io.Fonts->AddFontFromFileTTF(g_font_name.c_str(), (float)SCALED_SIZE(g_font_size),
+                                            nullptr, io.Fonts->GetGlyphRangesChineseFull());
+        IM_ASSERT(font != nullptr);
+    }
+    if (font == nullptr && FileExists(kFontName3)) {
+        g_font_name = SysWideToUTF8(kFontName3);
+        g_font_size = kFontSize3;
+        font = io.Fonts->AddFontFromFileTTF(g_font_name.c_str(), (float)SCALED_SIZE(g_font_size),
+                                            nullptr, io.Fonts->GetGlyphRangesChineseFull());
+        IM_ASSERT(font != nullptr);
+    }
+    if (font == nullptr) {
+        g_font_name = std::string();
+        g_font_size = 13;
+
+        ImFontConfig cfg;
+        cfg.OversampleH = cfg.OversampleV = 1, cfg.PixelSnapH = true;
+        cfg.SizePixels = SCALED_SIZE(g_font_size);
+        font = io.Fonts->AddFontDefault(&cfg);
+        IM_ASSERT(font != nullptr);
+    }
+}
 
 // Main Code
 int WINAPI WinMain(HINSTANCE hInstance,
@@ -122,39 +163,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
     // Setup viewport and fonts
     float scale_factor = ImGui_ImplWin32_GetDpiScaleForHwnd(hwnd);
 
-    ImFont* font = nullptr;
-
-    if (FileExists(kFontName)) {
-        g_font_name = SysWideToUTF8(kFontName);
-        g_font_size = kFontSize;
-        font = io.Fonts->AddFontFromFileTTF(g_font_name.c_str(), (float)SCALED_SIZE(g_font_size),
-                                            nullptr, io.Fonts->GetGlyphRangesChineseFull());
-        IM_ASSERT(font != nullptr);
-    }
-    if (font == nullptr && FileExists(kFontName2)) {
-        g_font_name = SysWideToUTF8(kFontName2);
-        g_font_size = kFontSize;
-        font = io.Fonts->AddFontFromFileTTF(g_font_name.c_str(), (float)SCALED_SIZE(g_font_size),
-                                            nullptr, io.Fonts->GetGlyphRangesChineseFull());
-        IM_ASSERT(font != nullptr);
-    }
-    if (font == nullptr && FileExists(kFontName3)) {
-        g_font_name = SysWideToUTF8(kFontName3);
-        g_font_size = kFontSize3;
-        font = io.Fonts->AddFontFromFileTTF(g_font_name.c_str(), (float)SCALED_SIZE(g_font_size),
-                                            nullptr, io.Fonts->GetGlyphRangesChineseFull());
-        IM_ASSERT(font != nullptr);
-    }
-    if (font == nullptr) {
-        g_font_name = std::string();
-        g_font_size = 13;
-
-        ImFontConfig cfg;
-        cfg.OversampleH = cfg.OversampleV = 1, cfg.PixelSnapH = true;
-        cfg.SizePixels = SCALED_SIZE(g_font_size);
-        font = io.Fonts->AddFontDefault(&cfg);
-        IM_ASSERT(font != nullptr);
-    }
+    SetupFonts(scale_factor);
 
     l.left *= scale_factor;
     l.top *= scale_factor;
@@ -162,46 +171,14 @@ int WINAPI WinMain(HINSTANCE hInstance,
     l.bottom *= scale_factor;
     OnChangedViewport(hwnd, scale_factor, &l);
 
-     // Main loop
+    // Main loop
     bool done = false;
 
     // Our state
-    std::vector<Account> loadedAccounts[2];
     std::vector<const char*> loadedAccountNames[2];
     char savedName[2][kMaxDisplayNameLength] = {};
     int selectedAccount[2] = {};
     const char* alert_message = nullptr;
-
-    // Setup DB
-    auto db_path = localapp_path + L"\\"+ kGenshinImpactLevelDbFileName;
-    leveldb::DB* db;
-    if (!EnsureCreatedDirectory(dir_path)) {
-        // "Unable to create directory"
-        ::MessageBoxW(hwnd, L"Failed to Open %appdata% Directory", L"GenshinImpactLoader", MB_OK);
-        goto cleanup;
-    }
-    db = OpenDb(SysWideToUTF8(db_path));
-    if (!db) {
-        ::MessageBoxW(hwnd, L"Failed to Open DB", L"GenshinImpactLoader", MB_OK);
-        goto cleanup;
-    }
-
-    // Load DB to Memory
-    // i = 0 -> Global Service
-    // i = 1 -> CN Service
-    // Load saved data from disk
-    {
-        std::vector<Account> loadedAccounts[2];
-        LoadSavedAccounts_Old(loadedAccounts);
-        for (int i = 0; i < 2; ++i) {
-            for (const Account& account : loadedAccounts[i]) {
-                if (!SaveAccountToDb(db, account)) {
-                    ::MessageBoxW(hwnd, L"Failed to Load Old Data", L"GenshinImpactLoader", MB_OK);
-                }
-            }
-        }
-    }
-    LoadSavedAccounts(db, loadedAccounts);
 
     while (!done)
     {
@@ -242,11 +219,11 @@ int WINAPI WinMain(HINSTANCE hInstance,
                             : u8"请选择加载当前账号或者保存当前账号");
 
                 loadedAccountNames[i].clear();
-                for (const auto& accnt : loadedAccounts[i]) {
+                for (const auto& accnt : g_loadedAccounts[i]) {
                     loadedAccountNames[i].push_back(accnt.display_name().c_str());
                 }
 
-                if (!loadedAccounts[i].empty()) {
+                if (!g_loadedAccounts[i].empty()) {
                     const char** items = &loadedAccountNames[i][0];
                     ImGui::ListBox(isGlobal ? u8"known accounts" : u8"账号列表", &selectedAccount[i], items, static_cast<int>(loadedAccountNames[i].size()), 4);
 
@@ -282,17 +259,17 @@ int WINAPI WinMain(HINSTANCE hInstance,
                     gone = 1;
 
                 if (load) {
-                    if (!loadedAccounts[i][selectedAccount[i]].Save()) {
+                    if (!g_loadedAccounts[i][selectedAccount[i]].Save()) {
                         alert_message = isGlobal ? u8"Failed to save current account" : u8"无法写入当期帐号信息";
                         ImGui::OpenPopup("alert-popup");
                     }
                 }
                 if (gone_selected) {
-                    if (loadedAccounts[i].size() > selectedAccount[i]) {
+                    if (g_loadedAccounts[i].size() > selectedAccount[i]) {
                         // save changes to disk
-                        if (WipeAccountToDb(db, loadedAccounts[i][selectedAccount[i]])) {
-                            auto iter = loadedAccounts[i].begin() + selectedAccount[i];
-                            loadedAccounts[i].erase(iter);
+                        if (WipeAccountToDb(g_db, g_loadedAccounts[i][selectedAccount[i]])) {
+                            auto iter = g_loadedAccounts[i].begin() + selectedAccount[i];
+                            g_loadedAccounts[i].erase(iter);
                             auto iter2 = loadedAccountNames[i].begin() + selectedAccount[i];
                             loadedAccountNames[i].erase(iter2);
                         } else {
@@ -317,10 +294,10 @@ int WINAPI WinMain(HINSTANCE hInstance,
                         ImGui::OpenPopup("alert-popup");
                     } else {
                         // save accounts to disk
-                        if (SaveAccountToDb(db, account)) {
-                            loadedAccounts[i].push_back(account);
+                        if (SaveAccountToDb(g_db, account)) {
+                            g_loadedAccounts[i].push_back(account);
                             loadedAccountNames[i].push_back(account.display_name().c_str());
-                            selectedAccount[i] = static_cast<int>(loadedAccounts[i].size()) - 1;
+                            selectedAccount[i] = static_cast<int>(g_loadedAccounts[i].size()) - 1;
                             savedName[i][0] = '\0';
                         } else {
                             alert_message = isGlobal ? u8"Failed to sync changes to disk" : u8"无法保存当前操作";
@@ -344,9 +321,9 @@ int WINAPI WinMain(HINSTANCE hInstance,
                     if (ImGui::Button(u8"Close popup")) {
                         ImGui::CloseCurrentPopup();
                     }
-                    ImGui::Text("%s: %s", "[display name]", loadedAccounts[i][selectedAccount[i]].display_name().c_str());
-                    ImGui::Text("%s: %s", "[key]", loadedAccounts[i][selectedAccount[i]].name().data());
-                    const nlohmann::json &data_json = loadedAccounts[i][selectedAccount[i]].data_json();
+                    ImGui::Text("%s: %s", "[display name]", g_loadedAccounts[i][selectedAccount[i]].display_name().c_str());
+                    ImGui::Text("%s: %s", "[key]", g_loadedAccounts[i][selectedAccount[i]].name().data());
+                    const nlohmann::json &data_json = g_loadedAccounts[i][selectedAccount[i]].data_json();
                     for (auto& [key, val] : data_json.items()) {
                         std::ostringstream os;
                         os << val;
@@ -374,9 +351,8 @@ int WINAPI WinMain(HINSTANCE hInstance,
         //g_pSwapChain->Present(0, 0); // Present without vsync
     }
 
-    CloseDb(db);
+    CloseDb(g_db);
 
-cleanup:
     // Cleanup
     ImGui_ImplDX11_Shutdown();
     ImGui_ImplWin32_Shutdown();
@@ -462,7 +438,9 @@ void OnChangedViewport(HWND hwnd, float scale_factor, const RECT* rect) {
     previous_scale_factor = scale_factor;
 
     io.Fonts->Clear();
-    ImGui_ImplDX11_InvalidateDeviceObjects();
+    if (g_pd3dDeviceContext) {
+        ImGui_ImplDX11_InvalidateDeviceObjects();
+    }
     if (!g_font_name.empty()) {
         font = io.Fonts->AddFontFromFileTTF(g_font_name.c_str(), (float)SCALED_SIZE(g_font_size),
                                             nullptr, io.Fonts->GetGlyphRangesChineseFull());
@@ -474,6 +452,40 @@ void OnChangedViewport(HWND hwnd, float scale_factor, const RECT* rect) {
     }
     io.Fonts->Build();
     assert(font->IsLoaded());
+}
+
+void LoadAccountsFromDisk(HWND hwnd) {
+    // Setup DB
+    auto localapp_path = GetLocalAppPath();
+    auto dir_path = localapp_path + L"\\"+ kGenshinImpactDir;
+    auto db_path = localapp_path + L"\\"+ kGenshinImpactLevelDbFileName;
+    if (!EnsureCreatedDirectory(dir_path)) {
+        // "Unable to create directory"
+        ::MessageBoxW(hwnd, L"Failed to Open %appdata% Directory", L"GenshinImpactLoader", MB_OK);
+        ::PostQuitMessage(0);
+    }
+    g_db = OpenDb(SysWideToUTF8(db_path));
+    if (!g_db) {
+        ::MessageBoxW(hwnd, L"Failed to Open DB", L"GenshinImpactLoader", MB_OK);
+        ::PostQuitMessage(0);
+    }
+
+    // Load DB to Memory
+    // i = 0 -> Global Service
+    // i = 1 -> CN Service
+    // Load saved data from disk
+    {
+        std::vector<Account> loadedAccounts[2];
+        LoadSavedAccounts_Old(loadedAccounts);
+        for (int i = 0; i < 2; ++i) {
+            for (const Account& account : loadedAccounts[i]) {
+                if (!SaveAccountToDb(g_db, account)) {
+                    ::MessageBoxW(hwnd, L"Failed to Load Old Data", L"GenshinImpactLoader", MB_OK);
+                }
+            }
+        }
+    }
+    LoadSavedAccounts(g_db, g_loadedAccounts);
 }
 
 // Win32 message handler
@@ -488,6 +500,9 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
     switch (msg)
     {
+    case WM_CREATE:
+        LoadAccountsFromDisk(hWnd);
+        break;
     case WM_DPICHANGED:
         // https://github.com/microsoft/Windows-classic-samples/blob/main/Samples/DPIAwarenessPerWindow/client/DpiAwarenessContext.cpp
         OnChangedViewport(hWnd, HIWORD(wParam)/96.0f, reinterpret_cast<RECT*>(lParam));
