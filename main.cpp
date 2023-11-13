@@ -66,6 +66,16 @@ static constexpr INT kFontSize = 14;
 static constexpr wchar_t kFontName3[] = L"C:\\Windows\\Fonts\\simsun.ttc";
 static constexpr INT kFontSize3 = 12;
 
+static void SetupWindowSize(HWND hwnd, float scale_factor, RECT *rect) {
+    LONG x = rect->top;
+    LONG y = rect->left;
+    LONG width = (rect->right - rect->left);
+    LONG height = (rect->bottom - rect->top);
+
+    ::SetWindowPos(hwnd, nullptr, x, y, width, height,
+                   SWP_NOZORDER | SWP_NOACTIVATE);
+}
+
 static void SetupFonts(float scale_factor) {
     ImGuiIO& io = ImGui::GetIO(); (void)io;
 
@@ -124,6 +134,15 @@ int WINAPI WinMain(HINSTANCE hInstance,
                                 WS_OVERLAPPEDWINDOW, x, y, width, height,
                                 nullptr, nullptr, wc.hInstance, nullptr);
 
+    // Resize window up to dpi scale before everything
+    float scale_factor = ImGui_ImplWin32_GetDpiScaleForHwnd(hwnd);
+
+    l.left *= scale_factor;
+    l.top *= scale_factor;
+    l.right *= scale_factor;
+    l.bottom *= scale_factor;
+    SetupWindowSize(hwnd, scale_factor, &l);
+
     // Initialize Direct3D
     if (!CreateDeviceD3D(hwnd))
     {
@@ -160,15 +179,10 @@ int WINAPI WinMain(HINSTANCE hInstance,
     ImGui_ImplWin32_Init(hwnd);
     ImGui_ImplDX11_Init(g_pd3dDevice, g_pd3dDeviceContext);
 
-    // Setup viewport and fonts
-    float scale_factor = ImGui_ImplWin32_GetDpiScaleForHwnd(hwnd);
-
+    // Setup fonts
     SetupFonts(scale_factor);
 
-    l.left *= scale_factor;
-    l.top *= scale_factor;
-    l.right *= scale_factor;
-    l.bottom *= scale_factor;
+    // Trigger DPI changed events
     OnChangedViewport(hwnd, scale_factor, &l);
 
     // Main loop
