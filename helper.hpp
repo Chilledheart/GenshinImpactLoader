@@ -17,6 +17,11 @@ bool IsDirectory(const std::wstring& path);
 bool CreatePrivateDirectory(const std::wstring& path);
 bool EnsureCreatedDirectory(const std::wstring& path);
 std::wstring ExpandUserFromString(const std::wstring& path);
+
+// Local Application Data directory under the user profile.
+// Usually "C:\Users\<user>\AppData\Local".
+std::wstring GetLocalAppPath();
+
 bool OpenKey(HKEY *hkey, bool isWriteOnly, const wchar_t* subkey);
 bool ReadKey(HKEY hkey, const wchar_t *valueName, std::vector<uint8_t>* output);
 bool WriteKey(HKEY hkey, const wchar_t *valueName, const std::vector<uint8_t>& output);

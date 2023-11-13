@@ -15,9 +15,9 @@
 #include "account.hpp"
 #include "helper.hpp"
 
-static const wchar_t kGenshinImpactDir[] = L"%APPDATA%\\GenshinImpactLoader";
-static const wchar_t kGenshinImpactImGuiIniFileName[] = L"%APPDATA%\\GenshinImpactLoader\\imgui.ini";
-static const wchar_t kGenshinImpactLevelDbFileName[] = L"%APPDATA%\\GenshinImpactLoader\\GenshinImpactLoader.db";
+static const wchar_t kGenshinImpactDir[] = L"GenshinImpactLoader";
+static const wchar_t kGenshinImpactImGuiIniFileName[] = L"GenshinImpactLoader\\imgui.ini";
+static const wchar_t kGenshinImpactLevelDbFileName[] = L"GenshinImpactLoader\\GenshinImpactLoader.db";
 
 #include "resource.h"
 
@@ -103,9 +103,10 @@ int WINAPI WinMain(HINSTANCE hInstance,
     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
     // Setup ImGui Ini File
-    auto dir_path = ExpandUserFromString(kGenshinImpactDir);
+    auto localapp_path = GetLocalAppPath();
+    auto dir_path = localapp_path + L"\\"+ kGenshinImpactDir;
     if (EnsureCreatedDirectory(dir_path)) {
-        static auto ini_path = SysWideToUTF8(ExpandUserFromString(kGenshinImpactImGuiIniFileName));
+        static auto ini_path = SysWideToUTF8(localapp_path + L"\\"+ kGenshinImpactImGuiIniFileName);
         io.IniFilename = ini_path.c_str();
     } else {
         io.IniFilename = nullptr;
@@ -172,7 +173,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
     const char* alert_message = nullptr;
 
     // Setup DB
-    auto db_path = ExpandUserFromString(kGenshinImpactLevelDbFileName);
+    auto db_path = localapp_path + L"\\"+ kGenshinImpactLevelDbFileName;
     leveldb::DB* db;
     if (!EnsureCreatedDirectory(dir_path)) {
         // "Unable to create directory"

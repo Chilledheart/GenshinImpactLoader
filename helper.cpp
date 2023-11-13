@@ -7,10 +7,12 @@
 #include <stddef.h>
 
 #include <bcrypt.h>
+#include <shlobj.h>
 
 #if defined(_MSC_VER)
 #pragma comment(lib, "advapi32")
 #pragma comment(lib, "bcrypt")
+#pragma comment(lib, "shell32")
 #endif
 
 static constexpr size_t kRegReadMaximumSize = 1024 * 1024;
@@ -64,6 +66,17 @@ std::wstring ExpandUserFromString(const std::wstring& path) {
     }
 
     return expanded_path;
+}
+
+std::wstring GetLocalAppPath() {
+    wchar_t system_buffer[32 * 1024];
+    system_buffer[0] = 0;
+    if (FAILED(SHGetFolderPathW(nullptr, CSIDL_LOCAL_APPDATA, nullptr,
+                                SHGFP_TYPE_CURRENT, system_buffer))) {
+        abort();
+        return std::wstring();
+    }
+    return std::wstring(system_buffer);
 }
 
 bool OpenKey(HKEY *hkey, bool isWriteOnly, const wchar_t* subkey) {
