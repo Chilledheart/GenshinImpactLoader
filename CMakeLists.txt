@@ -68,9 +68,9 @@ else()
 endif()
 
 if (MSVC)
-  link_libraries(dwmapi d3d11 d3dcompiler AdvAPI32 User32 kernel32)
+  link_libraries(bcrypt dwmapi d3d11 d3dcompiler AdvAPI32 User32 kernel32)
 else()
-  link_libraries(dwmapi d3d11 d3dcompiler advapi32 user32 kernel32)
+  link_libraries(bcrypt dwmapi d3d11 d3dcompiler advapi32 user32 kernel32)
 endif()
 
 if (MSVC AND MSVC_CRT_LINKAGE STREQUAL "static")

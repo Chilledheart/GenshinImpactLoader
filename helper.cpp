@@ -5,13 +5,12 @@
 
 #include <cassert>
 #include <stddef.h>
-#include <stdint.h>
 
-#include <algorithm>
-#include <limits>
+#include <bcrypt.h>
 
 #if defined(_MSC_VER)
 #pragma comment(lib, "advapi32")
+#pragma comment(lib, "bcrypt")
 #endif
 
 static constexpr size_t kRegReadMaximumSize = 1024 * 1024;
@@ -19,8 +18,8 @@ static constexpr size_t kRegReadMaximumSize = 1024 * 1024;
 static_assert(sizeof(BYTE) == sizeof(uint8_t));
 static_assert(alignof(BYTE) == alignof(uint8_t));
 
-bool FileExists(LPCSTR szPath) {
-    DWORD dwAttrib = GetFileAttributesA(szPath);
+bool FileExists(const std::string& path) {
+    DWORD dwAttrib = GetFileAttributesA(path.c_str());
 
     return (dwAttrib != INVALID_FILE_ATTRIBUTES &&
            !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
@@ -134,30 +133,18 @@ bool CloseKey(HKEY hkey) {
     return ::RegCloseKey(hkey);
 }
 
-// #define needed to link in RtlGenRandom(), a.k.a. SystemFunction036.  See the
-// "Community Additions" comment on MSDN here:
-// http://msdn.microsoft.com/en-us/library/windows/desktop/aa387694.aspx
-#define SystemFunction036 NTAPI SystemFunction036
-#ifdef COMPILER_MSVC
-#include <NTSecAPI.h>
-#else
-#include <ntsecapi.h>
-#endif
-#undef SystemFunction036
-
-// TODO: another alternative is BCryptGenRandom introduced in Windows Vista
-// https://docs.microsoft.com/en-us/windows/win32/api/bcrypt/nf-bcrypt-bcryptgenrandom
-
-void RandBytes(void* output, size_t output_length) {
-  char* output_ptr = static_cast<char*>(output);
-  while (output_length > 0) {
-    const ULONG output_bytes_this_pass = static_cast<ULONG>(std::min(
-        output_length, static_cast<size_t>(std::numeric_limits<ULONG>::max())));
-    const bool success =
-        RtlGenRandom(output_ptr, output_bytes_this_pass) != FALSE;
-    (void)success;
-    assert(success && "RtlGenRandom failed");
-    output_length -= output_bytes_this_pass;
-    output_ptr += output_bytes_this_pass;
-  }
+void RandBytes(PUCHAR out, size_t requested) {
+    while (requested > 0) {
+        ULONG output_bytes_this_pass = ULONG_MAX;
+        if (requested < output_bytes_this_pass) {
+            output_bytes_this_pass = (ULONG)requested;
+        }
+        if (!BCRYPT_SUCCESS(BCryptGenRandom(
+                /*hAlgorithm=*/NULL, out, output_bytes_this_pass,
+                BCRYPT_USE_SYSTEM_PREFERRED_RNG))) {
+            abort();
+        }
+        requested -= output_bytes_this_pass;
+        out += output_bytes_this_pass;
+    }
 }
