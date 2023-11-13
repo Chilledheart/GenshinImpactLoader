@@ -18,6 +18,8 @@ bool CreatePrivateDirectory(const std::wstring& path);
 bool EnsureCreatedDirectory(const std::wstring& path);
 std::wstring ExpandUserFromString(const std::wstring& path);
 
+// Usually C:\Windows\Fonts.
+std::wstring GetWindowsFontsPath();
 // Local Application Data directory under the user profile.
 // Usually "C:\Users\<user>\AppData\Local".
 std::wstring GetLocalAppPath();

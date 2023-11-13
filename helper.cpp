@@ -68,6 +68,17 @@ std::wstring ExpandUserFromString(const std::wstring& path) {
     return expanded_path;
 }
 
+std::wstring GetWindowsFontsPath() {
+    wchar_t system_buffer[32 * 1024];
+    system_buffer[0] = 0;
+    if (FAILED(SHGetFolderPathW(nullptr, CSIDL_FONTS, nullptr,
+                                SHGFP_TYPE_CURRENT, system_buffer))) {
+        abort();
+        return std::wstring();
+    }
+    return std::wstring(system_buffer);
+}
+
 std::wstring GetLocalAppPath() {
     wchar_t system_buffer[32 * 1024];
     system_buffer[0] = 0;

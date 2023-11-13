@@ -63,11 +63,12 @@ static void OnChangedViewport(HWND hwnd, float scale_factor, const RECT* l);
 static void LoadAccountsFromDisk(HWND hwnd);
 static LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-static constexpr wchar_t kFontName[] = L"C:\\Windows\\Fonts\\msyh.ttc";
-static constexpr wchar_t kFontName2[] = L"C:\\Windows\\Fonts\\msyh.ttf";
-static constexpr INT kFontSize = 14;
-static constexpr wchar_t kFontName3[] = L"C:\\Windows\\Fonts\\simsun.ttc";
-static constexpr INT kFontSize3 = 12;
+static constexpr wchar_t kMsyhTTCFontName[] = L"msyh.ttc";
+static constexpr wchar_t kMsyhTTFFontName[] = L"msyh.ttf";
+static constexpr INT kMsyhFontSize = 14;
+static constexpr wchar_t kSimSunFontName[] = L"simsun.ttc";
+static constexpr INT kSimSunFontSize = 12;
+static constexpr INT kDefaultFontSize = 13;
 
 static void SetupWindowSize(HWND hwnd, float scale_factor, RECT *rect) {
     LONG x = rect->top;
@@ -81,32 +82,37 @@ static void SetupWindowSize(HWND hwnd, float scale_factor, RECT *rect) {
 
 static void SetupFonts(float scale_factor) {
     ImGuiIO& io = ImGui::GetIO(); (void)io;
+    path fonts_path = GetWindowsFontsPath();
 
     ImFont* font = nullptr;
-    if (FileExists(kFontName)) {
-        g_font_name = SysWideToUTF8(kFontName);
-        g_font_size = kFontSize;
+    path p = fonts_path / kMsyhTTCFontName;
+    if (font == nullptr && FileExists(p)) {
+        g_font_name = p.u8string();
+        g_font_size = kMsyhFontSize;
         font = io.Fonts->AddFontFromFileTTF(g_font_name.c_str(), (float)SCALED_SIZE(g_font_size),
                                             nullptr, io.Fonts->GetGlyphRangesChineseFull());
         IM_ASSERT(font != nullptr);
     }
-    if (font == nullptr && FileExists(kFontName2)) {
-        g_font_name = SysWideToUTF8(kFontName2);
-        g_font_size = kFontSize;
+    p = fonts_path / kMsyhTTFFontName;
+    if (font == nullptr && FileExists(p)) {
+        g_font_name = p.u8string();
+        g_font_name = (fonts_path / kMsyhTTFFontName).u8string();
+        g_font_size = kMsyhFontSize;
         font = io.Fonts->AddFontFromFileTTF(g_font_name.c_str(), (float)SCALED_SIZE(g_font_size),
                                             nullptr, io.Fonts->GetGlyphRangesChineseFull());
         IM_ASSERT(font != nullptr);
     }
-    if (font == nullptr && FileExists(kFontName3)) {
-        g_font_name = SysWideToUTF8(kFontName3);
-        g_font_size = kFontSize3;
+    p = fonts_path / kSimSunFontName;
+    if (font == nullptr && FileExists(p)) {
+        g_font_name = p.u8string();
+        g_font_size = kSimSunFontSize;
         font = io.Fonts->AddFontFromFileTTF(g_font_name.c_str(), (float)SCALED_SIZE(g_font_size),
                                             nullptr, io.Fonts->GetGlyphRangesChineseFull());
         IM_ASSERT(font != nullptr);
     }
     if (font == nullptr) {
         g_font_name = std::string();
-        g_font_size = 13;
+        g_font_size = kDefaultFontSize;
 
         ImFontConfig cfg;
         cfg.OversampleH = cfg.OversampleV = 1, cfg.PixelSnapH = true;
