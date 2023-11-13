@@ -173,12 +173,13 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
     // Setup DB
     auto db_path = ExpandUserFromStringA(kGenshinImpactLevelDbFileName, sizeof(kGenshinImpactLevelDbFileName) - 1);
-    leveldb::DB* db = OpenDb(db_path);
+    leveldb::DB* db;
     if (!EnsureCreatedDirectory(dir_path)) {
         // "Unable to create directory"
         ::MessageBoxW(hwnd, L"Failed to Open %appdata% Directory", L"GenshinImpactLoader", MB_OK);
         goto cleanup;
     }
+    db = OpenDb(db_path);
     if (!db) {
         ::MessageBoxW(hwnd, L"Failed to Open DB", L"GenshinImpactLoader", MB_OK);
         goto cleanup;
@@ -188,7 +189,17 @@ int WINAPI WinMain(HINSTANCE hInstance,
     // i = 0 -> Global Service
     // i = 1 -> CN Service
     // Load saved data from disk
-    LoadSavedAccounts_Old(loadedAccounts);
+    {
+        std::vector<Account> loadedAccounts[2];
+        LoadSavedAccounts_Old(loadedAccounts);
+        for (int i = 0; i < 2; ++i) {
+            for (const Account& account : loadedAccounts[i]) {
+                if (!SaveAccountToDb(db, account)) {
+                    ::MessageBoxW(hwnd, L"Failed to Load Old Data", L"GenshinImpactLoader", MB_OK);
+                }
+            }
+        }
+    }
     LoadSavedAccounts(db, loadedAccounts);
 
     while (!done)
