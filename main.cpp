@@ -11,9 +11,12 @@
 #include "imgui_impl_dx11.h"
 #include <d3d11.h>
 #include <sstream>
+#include <filesystem>
 
 #include "account.hpp"
 #include "helper.hpp"
+
+using path = std::filesystem::path;
 
 static const wchar_t kGenshinImpactDir[] = L"GenshinImpactLoader";
 static const wchar_t kGenshinImpactImGuiIniFileName[] = L"GenshinImpactLoader\\imgui.ini";
@@ -163,10 +166,10 @@ int WINAPI WinMain(HINSTANCE hInstance,
     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
     // Setup ImGui Ini File
-    auto localapp_path = GetLocalAppPath();
-    auto dir_path = localapp_path + L"\\"+ kGenshinImpactDir;
+    path localapp_path = path(GetLocalAppPath());
+    auto dir_path = localapp_path / kGenshinImpactDir;
     if (EnsureCreatedDirectory(dir_path)) {
-        static auto ini_path = SysWideToUTF8(localapp_path + L"\\"+ kGenshinImpactImGuiIniFileName);
+        static std::string ini_path = (localapp_path / kGenshinImpactImGuiIniFileName).u8string();
         io.IniFilename = ini_path.c_str();
     } else {
         io.IniFilename = nullptr;
@@ -470,15 +473,15 @@ void OnChangedViewport(HWND hwnd, float scale_factor, const RECT* rect) {
 
 void LoadAccountsFromDisk(HWND hwnd) {
     // Setup DB
-    auto localapp_path = GetLocalAppPath();
-    auto dir_path = localapp_path + L"\\"+ kGenshinImpactDir;
-    auto db_path = localapp_path + L"\\"+ kGenshinImpactLevelDbFileName;
+    path localapp_path = GetLocalAppPath();
+    auto dir_path = localapp_path / kGenshinImpactDir;
+    auto db_path = localapp_path / kGenshinImpactLevelDbFileName;
     if (!EnsureCreatedDirectory(dir_path)) {
         // "Unable to create directory"
         ::MessageBoxW(hwnd, L"Failed to Open %appdata% Directory", L"GenshinImpactLoader", MB_OK);
         ::PostQuitMessage(0);
     }
-    g_db = OpenDb(SysWideToUTF8(db_path));
+    g_db = OpenDb(db_path.u8string());
     if (!g_db) {
         ::MessageBoxW(hwnd, L"Failed to Open DB", L"GenshinImpactLoader", MB_OK);
         ::PostQuitMessage(0);
