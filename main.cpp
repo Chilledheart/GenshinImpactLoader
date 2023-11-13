@@ -15,9 +15,9 @@
 #include "account.hpp"
 #include "helper.hpp"
 
-static const char kGenshinImpactDir[] = "%APPDATA%\\GenshinImpactLoader";
-static const char kGenshinImpactImGuiIniFileName[] = "%APPDATA%\\GenshinImpactLoader\\imgui.ini";
-static const char kGenshinImpactLevelDbFileName[] = "%APPDATA%\\GenshinImpactLoader\\GenshinImpactLoader.db";
+static const wchar_t kGenshinImpactDir[] = L"%APPDATA%\\GenshinImpactLoader";
+static const wchar_t kGenshinImpactImGuiIniFileName[] = L"%APPDATA%\\GenshinImpactLoader\\imgui.ini";
+static const wchar_t kGenshinImpactLevelDbFileName[] = L"%APPDATA%\\GenshinImpactLoader\\GenshinImpactLoader.db";
 
 #include "resource.h"
 
@@ -34,7 +34,7 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 #define SCALED_INT_SIZE(X) int(scale_factor * float(X))
 
 static INT g_font_size;
-static const char* g_font_name;
+static std::string g_font_name;
 
 #if defined(_MSC_VER)
 #pragma comment(lib, "d3d11")
@@ -56,10 +56,10 @@ static void CleanupRenderTarget();
 static void OnChangedViewport(HWND hwnd, float scale_factor, const RECT* l);
 static LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-static constexpr char kFontName[] = "C:\\Windows\\Fonts\\msyh.ttc";
-static constexpr char kFontName2[] = "C:\\Windows\\Fonts\\msyh.ttf";
+static constexpr wchar_t kFontName[] = L"C:\\Windows\\Fonts\\msyh.ttc";
+static constexpr wchar_t kFontName2[] = L"C:\\Windows\\Fonts\\msyh.ttf";
 static constexpr INT kFontSize = 14;
-static constexpr char kFontName3[] = "C:\\Windows\\Fonts\\simsun.ttc";
+static constexpr wchar_t kFontName3[] = L"C:\\Windows\\Fonts\\simsun.ttc";
 static constexpr INT kFontSize3 = 12;
 
 // Main Code
@@ -103,9 +103,9 @@ int WINAPI WinMain(HINSTANCE hInstance,
     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
     // Setup ImGui Ini File
-    auto dir_path = ExpandUserFromStringA(kGenshinImpactDir, sizeof(kGenshinImpactDir) - 1);
+    auto dir_path = ExpandUserFromString(kGenshinImpactDir);
     if (EnsureCreatedDirectory(dir_path)) {
-        static auto ini_path = ExpandUserFromStringA(kGenshinImpactImGuiIniFileName, sizeof(kGenshinImpactImGuiIniFileName) - 1);
+        static auto ini_path = SysWideToUTF8(ExpandUserFromString(kGenshinImpactImGuiIniFileName));
         io.IniFilename = ini_path.c_str();
     } else {
         io.IniFilename = nullptr;
@@ -124,28 +124,28 @@ int WINAPI WinMain(HINSTANCE hInstance,
     ImFont* font = nullptr;
 
     if (FileExists(kFontName)) {
-        g_font_name = kFontName;
+        g_font_name = SysWideToUTF8(kFontName);
         g_font_size = kFontSize;
-        font = io.Fonts->AddFontFromFileTTF(g_font_name, (float)SCALED_SIZE(g_font_size),
+        font = io.Fonts->AddFontFromFileTTF(g_font_name.c_str(), (float)SCALED_SIZE(g_font_size),
                                             nullptr, io.Fonts->GetGlyphRangesChineseFull());
         IM_ASSERT(font != nullptr);
     }
     if (font == nullptr && FileExists(kFontName2)) {
-        g_font_name = kFontName2;
+        g_font_name = SysWideToUTF8(kFontName2);
         g_font_size = kFontSize;
-        font = io.Fonts->AddFontFromFileTTF(g_font_name, (float)SCALED_SIZE(g_font_size),
+        font = io.Fonts->AddFontFromFileTTF(g_font_name.c_str(), (float)SCALED_SIZE(g_font_size),
                                             nullptr, io.Fonts->GetGlyphRangesChineseFull());
         IM_ASSERT(font != nullptr);
     }
     if (font == nullptr && FileExists(kFontName3)) {
-        g_font_name = kFontName3;
+        g_font_name = SysWideToUTF8(kFontName3);
         g_font_size = kFontSize3;
-        font = io.Fonts->AddFontFromFileTTF(g_font_name, (float)SCALED_SIZE(g_font_size),
+        font = io.Fonts->AddFontFromFileTTF(g_font_name.c_str(), (float)SCALED_SIZE(g_font_size),
                                             nullptr, io.Fonts->GetGlyphRangesChineseFull());
         IM_ASSERT(font != nullptr);
     }
     if (font == nullptr) {
-        g_font_name = nullptr;
+        g_font_name = std::string();
         g_font_size = 13;
 
         ImFontConfig cfg;
@@ -172,14 +172,14 @@ int WINAPI WinMain(HINSTANCE hInstance,
     const char* alert_message = nullptr;
 
     // Setup DB
-    auto db_path = ExpandUserFromStringA(kGenshinImpactLevelDbFileName, sizeof(kGenshinImpactLevelDbFileName) - 1);
+    auto db_path = ExpandUserFromString(kGenshinImpactLevelDbFileName);
     leveldb::DB* db;
     if (!EnsureCreatedDirectory(dir_path)) {
         // "Unable to create directory"
         ::MessageBoxW(hwnd, L"Failed to Open %appdata% Directory", L"GenshinImpactLoader", MB_OK);
         goto cleanup;
     }
-    db = OpenDb(db_path);
+    db = OpenDb(SysWideToUTF8(db_path));
     if (!db) {
         ::MessageBoxW(hwnd, L"Failed to Open DB", L"GenshinImpactLoader", MB_OK);
         goto cleanup;
@@ -462,8 +462,8 @@ void OnChangedViewport(HWND hwnd, float scale_factor, const RECT* rect) {
 
     io.Fonts->Clear();
     ImGui_ImplDX11_InvalidateDeviceObjects();
-    if (g_font_name) {
-        font = io.Fonts->AddFontFromFileTTF(g_font_name, (float)SCALED_SIZE(g_font_size),
+    if (!g_font_name.empty()) {
+        font = io.Fonts->AddFontFromFileTTF(g_font_name.c_str(), (float)SCALED_SIZE(g_font_size),
                                             nullptr, io.Fonts->GetGlyphRangesChineseFull());
     } else {
         ImFontConfig cfg;

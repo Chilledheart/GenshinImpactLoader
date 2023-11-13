@@ -18,46 +18,48 @@ static constexpr size_t kRegReadMaximumSize = 1024 * 1024;
 static_assert(sizeof(BYTE) == sizeof(uint8_t));
 static_assert(alignof(BYTE) == alignof(uint8_t));
 
-bool FileExists(const std::string& path) {
-    DWORD dwAttrib = GetFileAttributesA(path.c_str());
+bool FileExists(const std::wstring& path) {
+    DWORD dwAttrib = GetFileAttributesW(path.c_str());
 
     return (dwAttrib != INVALID_FILE_ATTRIBUTES &&
            !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
 }
 
-bool IsDirectory(const std::string& path) {
-    if (path == "." || path == "..") {
+bool IsDirectory(const std::wstring& path) {
+    if (path == L"." || path == L"..") {
         return true;
     }
 
-    DWORD dwAttrib = GetFileAttributesA(path.c_str());
+    DWORD dwAttrib = GetFileAttributesW(path.c_str());
     return (dwAttrib != INVALID_FILE_ATTRIBUTES &&
              (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
 }
 
-bool CreatePrivateDirectory(const std::string& path) {
-    return ::CreateDirectoryA(path.c_str(), nullptr) == TRUE;
+bool CreatePrivateDirectory(const std::wstring& path) {
+    return ::CreateDirectoryW(path.c_str(), nullptr) == TRUE;
 }
 
-bool EnsureCreatedDirectory(const std::string& path) {
+bool EnsureCreatedDirectory(const std::wstring& path) {
     return IsDirectory(path) || CreatePrivateDirectory(path);
 }
 
-std::string ExpandUserFromStringA(const char* path, size_t path_len) {
+std::wstring ExpandUserFromString(const std::wstring& path) {
+    size_t path_len = path.size();
     // the return value is the REQUIRED number of TCHARs,
     // including the terminating NULL character.
-    DWORD required_size = ::ExpandEnvironmentStringsA(path, nullptr, 0);
+    DWORD required_size = ::ExpandEnvironmentStringsW(path.c_str(), nullptr, 0);
 
+    // The size of the lpSrc and lpDst buffers is limited to 32K.
     /* if failure or too many bytes required, documented in
      * ExpandEnvironmentStringsW */
-    if (required_size == 0 || required_size > MAX_PATH) {
-        return std::string(path, path_len ? path_len - 1 : path_len);
+    if (required_size == 0 || required_size >= 32 * 1024) {
+        return std::wstring(path, path_len ? path_len - 1 : path_len);
     }
 
-    std::string expanded_path;
+    std::wstring expanded_path;
     expanded_path.resize(required_size);
-    ::ExpandEnvironmentStringsA(path, &expanded_path[0], required_size);
-    while (!expanded_path.empty() && expanded_path[expanded_path.size() - 1] == '\0') {
+    ::ExpandEnvironmentStringsW(path.c_str(), &expanded_path[0], required_size);
+    while (!expanded_path.empty() && expanded_path[expanded_path.size() - 1] == L'\0') {
         expanded_path.resize(expanded_path.size() - 1);
     }
 
@@ -147,4 +149,77 @@ void RandBytes(PUCHAR out, size_t requested) {
         requested -= output_bytes_this_pass;
         out += output_bytes_this_pass;
     }
+}
+
+// Do not assert in this function since it is used by the asssertion code!
+std::string SysWideToUTF8(const std::wstring& wide) {
+    return SysWideToMultiByte(wide, CP_UTF8);
+}
+
+// Do not assert in this function since it is used by the asssertion code!
+std::wstring SysUTF8ToWide(std::string_view utf8) {
+    return SysMultiByteToWide(utf8, CP_UTF8);
+}
+
+// Do not assert in this function since it is used by the asssertion code!
+std::wstring SysMultiByteToWide(std::string_view mb, uint32_t code_page) {
+    int mb_length = static_cast<int>(mb.length());
+    // Note that, if cbMultiByte is 0, the function fails.
+    if (mb_length == 0)
+        return std::wstring();
+
+    // Compute the length of the buffer.
+    int charcount = MultiByteToWideChar(code_page /* CodePage */,
+                                        0 /* dwFlags */,
+                                        mb.data() /* lpMultiByteStr */,
+                                        mb_length /* cbMultiByte */,
+                                        nullptr /* lpWideCharStr */,
+                                        0 /* cchWideChar */);
+    // The function returns 0 if it does not succeed.
+    if (charcount == 0)
+        return std::wstring();
+
+    // If the function succeeds and cchWideChar is 0,
+    // the return value is the required size, in characters,
+    std::wstring wide;
+    wide.resize(charcount);
+    MultiByteToWideChar(code_page /* CodePage */, 0 /* dwFlags */,
+                        mb.data() /* lpMultiByteStr */,
+                        mb_length /* cbMultiByte */,
+                        &wide[0] /* lpWideCharStr */,
+                        charcount /* cchWideChar */);
+
+    return wide;
+}
+
+// Do not assert in this function since it is used by the asssertion code!
+std::string SysWideToMultiByte(const std::wstring& wide, uint32_t code_page) {
+    int wide_length = static_cast<int>(wide.length());
+    // If cchWideChar is set to 0, the function fails.
+    if (wide_length == 0)
+        return std::string();
+
+    // Compute the length of the buffer we'll need.
+    int charcount = WideCharToMultiByte(code_page /* CodePage */,
+                                        0 /* dwFlags */,
+                                        wide.data() /* lpWideCharStr */,
+                                        wide_length /* cchWideChar */,
+                                        nullptr /* lpMultiByteStr */,
+                                        0 /* cbMultiByte */,
+                                        nullptr /* lpDefaultChar */,
+                                        nullptr /* lpUsedDefaultChar */);
+    // The function returns 0 if it does not succeed.
+    if (charcount == 0)
+        return std::string();
+    // If the function succeeds and cbMultiByte is 0, the return value is
+    // the required size, in bytes, for the buffer indicated by lpMultiByteStr.
+    std::string mb;
+    mb.resize(charcount);
+
+    WideCharToMultiByte(code_page /* CodePage */, 0 /* dwFlags */,
+                        wide.data() /* lpWideCharStr */, wide_length /* cchWideChar */,
+                        &mb[0] /* lpMultiByteStr */, charcount /* cbMultiByte */,
+                        nullptr /* lpDefaultChar */, nullptr /* lpUsedDefaultChar */);
+
+    return mb;
 }
