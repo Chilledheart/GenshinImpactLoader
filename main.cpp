@@ -302,7 +302,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
                 }
                 if (gone) {
                     std::vector<uint8_t> name(1, 0), data(0);
-                    Account account(Rand<uint64_t>(), isGlobal, "Gone", name, data);
+                    Account account(Rand<uint64_t>(), isGlobal, "Gone", name, data, 0);
                     if (account.Save()) {
                         alert_message = isGlobal ? u8"Current Login information is wiped" : u8"当前登录信息已被移除";
                         ImGui::OpenPopup("alert-popup");
@@ -343,13 +343,19 @@ int WINAPI WinMain(HINSTANCE hInstance,
                     if (ImGui::Button(u8"Close popup")) {
                         ImGui::CloseCurrentPopup();
                     }
-                    ImGui::Text("%s: %s", "[display name]", g_loadedAccounts[i][selectedAccount[i]].display_name().c_str());
-                    ImGui::Text("%s: %s", "[key]", g_loadedAccounts[i][selectedAccount[i]].name().data());
-                    const nlohmann::json &data_json = g_loadedAccounts[i][selectedAccount[i]].data_json();
+                    const auto& account = g_loadedAccounts[i][selectedAccount[i]];
+                    std::time_t time = account.time();
+                    ImGui::Text("[%s]: %s", "display name", account.display_name().c_str());
+                    ImGui::Text("[%s]: %s", "key", account.name().data());
+                    ImGui::Text("[%s]: %s", "time", std::ctime(&time));
+                    const nlohmann::json &data_json = account.data_json();
                     for (auto& [key, val] : data_json.items()) {
+                        if (val.is_discarded()) {
+                            continue;
+                        }
                         std::ostringstream os;
                         os << val;
-                        ImGui::Text("%s: %s", key.c_str(), os.str().c_str());
+                        ImGui::Text("[%s]: %s", key.c_str(), os.str().c_str());
                     }
                     ImGui::EndPopup();
                 }
@@ -510,6 +516,20 @@ void LoadAccountsFromDisk(HWND hwnd) {
         }
     }
     LoadSavedAccounts(g_db, g_loadedAccounts);
+
+    // Update time field if missing
+    std::time_t ctime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    for (int i = 0; i < 2; ++i) {
+        for (Account& account : g_loadedAccounts[i]) {
+            if (account.time() == 0) {
+                account.update_time(ctime);
+                if (!SaveAccountToDb(g_db, account)) {
+                    // roll back if failed
+                    account.update_time(0);
+                }
+            }
+        }
+    }
 }
 
 // Win32 message handler

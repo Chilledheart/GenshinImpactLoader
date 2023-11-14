@@ -119,10 +119,15 @@ void LoadSavedAccounts(leveldb::DB* db, std::vector<Account> *loadedAccounts) {
             data.resize(len + 1, 0);
             memcpy(data.data(), c_data.c_str(), len);
 
+            std::time_t time = 0;
+            if (root.contains("time") && root["time"].is_number_unsigned()) {
+                time = root["time"].get<std::time_t>();
+            }
+
             Account account(id,
                             root["is_global"].get<bool>(),
                             root["display_name"].get<std::string>(),
-                            name, data);
+                            name, data, time);
             loadedAccounts[account.is_global() != 0 ? 0 : 1].push_back(account);
         } else {
             // err non-parsable data
@@ -160,6 +165,7 @@ bool SaveAccountToDb(leveldb::DB* db, const Account &account) {
     root["is_global"] = account.is_global();
     root["name"] = name;
     root["data"] = data;
+    root["time"] = account.time();
 
     writeOptions.sync = true;
     status = db->Put(writeOptions, std::to_string(account.id()), root.dump());
@@ -191,7 +197,8 @@ void LoadSavedAccounts_Old(std::vector<Account> *loadedAccounts) {
         len = strnlen(accnt.userData, sizeof(accnt.userData));
         data.resize(len + 1, 0);
         memcpy(data.data(), accnt.userData, len);
-        Account account(Rand<uint64_t>(), accnt.isGlobal, display_name, name, data);
+
+        Account account(Rand<uint64_t>(), accnt.isGlobal, display_name, name, data, 0);
 
         loadedAccounts[accnt.isGlobal != 0 ? 0 : 1].push_back(account);
     }

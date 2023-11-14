@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include <stdint.h>
+#include <chrono>
 
 #include "helper.hpp"
 
@@ -15,13 +16,15 @@
 class Account {
   public:
     Account(bool is_global, const std::string& display_name)
-      : id_(Rand<uint64_t>()), is_global_(is_global), display_name_(display_name) {}
+      : id_(Rand<uint64_t>()), is_global_(is_global), display_name_(display_name),
+      time_(std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())) {}
 
     Account(uint64_t id, bool is_global, const std::string& display_name,
             const std::vector<uint8_t> &name,
-            const std::vector<uint8_t> &data)
+            const std::vector<uint8_t> &data,
+            std::time_t time)
       : id_(id), is_global_(is_global), display_name_(display_name),
-        name_(name), data_(data) {
+        name_(name), data_(data), time_(time) {
         if (!data.empty()) {
             std::string slice = reinterpret_cast<const char*>(&data[0]);
             data_json_ = nlohmann::json::parse(slice, nullptr, false);
@@ -48,8 +51,16 @@ class Account {
       return data_;
     }
 
+    std::time_t time() const {
+      return time_;
+    }
+
     const nlohmann::json& data_json() const {
       return data_json_;
+    }
+
+    void update_time(std::time_t time) {
+      time_ = time;
     }
 
     [[nodiscard]]
@@ -64,6 +75,7 @@ class Account {
     std::string display_name_;
     std::vector<uint8_t> name_;
     std::vector<uint8_t> data_;
+    std::time_t time_;
 
     nlohmann::json data_json_;
 };
