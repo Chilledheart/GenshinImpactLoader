@@ -68,26 +68,26 @@ std::wstring ExpandUserFromString(const std::wstring& path) {
     return expanded_path;
 }
 
-std::wstring GetWindowsFontsPath() {
+std::filesystem::path GetWindowsFontsPath() {
     wchar_t system_buffer[32 * 1024];
     system_buffer[0] = 0;
     if (FAILED(SHGetFolderPathW(nullptr, CSIDL_FONTS, nullptr,
                                 SHGFP_TYPE_CURRENT, system_buffer))) {
         abort();
-        return std::wstring();
+        return std::filesystem::path();
     }
-    return std::wstring(system_buffer);
+    return std::filesystem::path(system_buffer, std::filesystem::path::native_format);
 }
 
-std::wstring GetLocalAppPath() {
+std::filesystem::path GetLocalAppPath() {
     wchar_t system_buffer[32 * 1024];
     system_buffer[0] = 0;
     if (FAILED(SHGetFolderPathW(nullptr, CSIDL_LOCAL_APPDATA, nullptr,
                                 SHGFP_TYPE_CURRENT, system_buffer))) {
         abort();
-        return std::wstring();
+        return std::filesystem::path();
     }
-    return std::wstring(system_buffer);
+    return std::filesystem::path(system_buffer, std::filesystem::path::native_format);
 }
 
 bool OpenKey(HKEY *hkey, bool isWriteOnly, const wchar_t* subkey) {

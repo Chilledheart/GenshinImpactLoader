@@ -4,6 +4,7 @@
 #ifndef _HELPER_HPP
 #define _HELPER_HPP
 
+#include <filesystem>
 #include <stdint.h>
 #include <string>
 #include <string_view>
@@ -19,10 +20,10 @@ bool EnsureCreatedDirectory(const std::wstring& path);
 std::wstring ExpandUserFromString(const std::wstring& path);
 
 // Usually C:\Windows\Fonts.
-std::wstring GetWindowsFontsPath();
+std::filesystem::path GetWindowsFontsPath();
 // Local Application Data directory under the user profile.
 // Usually "C:\Users\<user>\AppData\Local".
-std::wstring GetLocalAppPath();
+std::filesystem::path GetLocalAppPath();
 
 bool OpenKey(HKEY *hkey, bool isWriteOnly, const wchar_t* subkey);
 bool ReadKey(HKEY hkey, const wchar_t *valueName, std::vector<uint8_t>* output);

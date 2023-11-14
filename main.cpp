@@ -11,7 +11,6 @@
 #include "imgui_impl_dx11.h"
 #include <d3d11.h>
 #include <sstream>
-#include <filesystem>
 
 #include "account.hpp"
 #include "helper.hpp"
@@ -82,10 +81,10 @@ static void SetupWindowSize(HWND hwnd, float scale_factor, RECT *rect) {
 
 static void SetupFonts(float scale_factor) {
     ImGuiIO& io = ImGui::GetIO(); (void)io;
-    path fonts_path = GetWindowsFontsPath();
+    auto fonts_path = GetWindowsFontsPath();
 
     ImFont* font = nullptr;
-    path p = fonts_path / kMsyhTTCFontName;
+    auto p = fonts_path / kMsyhTTCFontName;
     if (font == nullptr && FileExists(p)) {
         g_font_name = p.u8string();
         g_font_size = kMsyhFontSize;
@@ -172,7 +171,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
     // Setup ImGui Ini File
-    path localapp_path = path(GetLocalAppPath());
+    auto localapp_path = GetLocalAppPath();
     auto dir_path = localapp_path / kGenshinImpactDir;
     if (EnsureCreatedDirectory(dir_path)) {
         static std::string ini_path = (localapp_path / kGenshinImpactImGuiIniFileName).u8string();
@@ -479,18 +478,20 @@ void OnChangedViewport(HWND hwnd, float scale_factor, const RECT* rect) {
 
 void LoadAccountsFromDisk(HWND hwnd) {
     // Setup DB
-    path localapp_path = GetLocalAppPath();
+    auto localapp_path = GetLocalAppPath();
     auto dir_path = localapp_path / kGenshinImpactDir;
     auto db_path = localapp_path / kGenshinImpactLevelDbFileName;
     if (!EnsureCreatedDirectory(dir_path)) {
         // "Unable to create directory"
-        ::MessageBoxW(hwnd, L"Failed to Open %appdata% Directory", L"GenshinImpactLoader", MB_OK);
+        ::MessageBoxW(hwnd, L"Failed to Open LocalApp Directory", L"GenshinImpactLoader", MB_OK);
         ::PostQuitMessage(0);
+        return;
     }
     g_db = OpenDb(db_path.u8string());
     if (!g_db) {
         ::MessageBoxW(hwnd, L"Failed to Open DB", L"GenshinImpactLoader", MB_OK);
         ::PostQuitMessage(0);
+        return;
     }
 
     // Load DB to Memory
