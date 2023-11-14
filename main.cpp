@@ -260,7 +260,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
                     ImGui::SameLine();
 
                     if (ImGui::Button(isGlobal ? u8"View Selected" : u8"查看选中"))
-                        ImGui::OpenPopup("view-popup");
+                        ImGui::OpenPopup("##view-popup");
                 }
 
                 ImGui::InputTextWithHint(isGlobal ? u8"Save As" : u8"另存为",
@@ -283,7 +283,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
                 if (load) {
                     if (!g_loadedAccounts[i][selectedAccount[i]].Save()) {
                         alert_message = isGlobal ? u8"Failed to save current account" : u8"无法写入当期帐号信息";
-                        ImGui::OpenPopup("alert-popup");
+                        ImGui::OpenPopup("##alert-popup");
                     }
                 }
                 if (gone_selected) {
@@ -296,7 +296,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
                             loadedAccountNames[i].erase(iter2);
                         } else {
                             alert_message = isGlobal ? u8"Failed to sync changes to disk" : u8"无法保存当前操作";
-                            ImGui::OpenPopup("alert-popup");
+                            ImGui::OpenPopup("##alert-popup");
                         }
                     }
                 }
@@ -305,7 +305,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
                     Account account(Rand<uint64_t>(), isGlobal, "Gone", name, data, 0);
                     if (account.Save()) {
                         alert_message = isGlobal ? u8"Current Login information is wiped" : u8"当前登录信息已被移除";
-                        ImGui::OpenPopup("alert-popup");
+                        ImGui::OpenPopup("##alert-popup");
                     }
 
                 }
@@ -313,7 +313,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
                     Account account(isGlobal, savedName[i]);
                     if (!account.Load()) {
                         alert_message = isGlobal ? u8"Failed to load current account" : u8"无法读取当期帐号信息";
-                        ImGui::OpenPopup("alert-popup");
+                        ImGui::OpenPopup("##alert-popup");
                     } else {
                         // save accounts to disk
                         if (SaveAccountToDb(g_db, account)) {
@@ -323,12 +323,12 @@ int WINAPI WinMain(HINSTANCE hInstance,
                             savedName[i][0] = '\0';
                         } else {
                             alert_message = isGlobal ? u8"Failed to sync changes to disk" : u8"无法保存当前操作";
-                            ImGui::OpenPopup("alert-popup");
+                            ImGui::OpenPopup("##alert-popup");
                         }
                     }
                 }
 
-                if (ImGui::BeginPopupModal("alert-popup"))
+                if (ImGui::BeginPopupModal("##alert-popup"))
                 {
                     ImGui::Text("%s", alert_message);
                     if (ImGui::Button(isGlobal ? u8"Okay" : u8"确认")) {
@@ -338,7 +338,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
                     ImGui::EndPopup();
                 }
 
-                if (ImGui::BeginPopupModal("view-popup"))
+                if (ImGui::BeginPopupModal("##view-popup"))
                 {
                     if (ImGui::Button(isGlobal ? u8"Close popup" : u8"关闭子窗口")) {
                         ImGui::CloseCurrentPopup();
