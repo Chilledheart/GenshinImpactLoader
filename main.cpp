@@ -345,9 +345,9 @@ int WINAPI WinMain(HINSTANCE hInstance,
                     }
                     const auto& account = g_loadedAccounts[i][selectedAccount[i]];
                     std::time_t time = account.time();
-                    ImGui::Text("[%s]: %s", "display name", account.display_name().c_str());
-                    ImGui::Text("[%s]: %s", "key", account.name().data());
-                    ImGui::Text("[%s]: %s", "time", std::ctime(&time));
+                    ImGui::Text("[%s]: %s", isGlobal ? "display name" : "账号名称", account.display_name().c_str());
+                    ImGui::Text("[%s]: %s", isGlobal ? "key" : "密钥", account.name().data());
+                    ImGui::Text("[%s]: %s", isGlobal ? "time" : "创建时间", std::ctime(&time));
                     const nlohmann::json &data_json = account.data_json();
                     for (auto& [key, val] : data_json.items()) {
                         if (val.is_discarded()) {
