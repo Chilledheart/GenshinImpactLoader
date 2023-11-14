@@ -331,7 +331,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
                 if (ImGui::BeginPopupModal("alert-popup"))
                 {
                     ImGui::Text("%s", alert_message);
-                    if (ImGui::Button(u8"Okay")) {
+                    if (ImGui::Button(isGlobal ? u8"Okay" : u8"确认")) {
                         ImGui::CloseCurrentPopup();
                         alert_message = nullptr;
                     }
@@ -340,7 +340,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
                 if (ImGui::BeginPopupModal("view-popup"))
                 {
-                    if (ImGui::Button(u8"Close popup")) {
+                    if (ImGui::Button(isGlobal ? u8"Close popup" : u8"关闭子窗口")) {
                         ImGui::CloseCurrentPopup();
                     }
                     const auto& account = g_loadedAccounts[i][selectedAccount[i]];
