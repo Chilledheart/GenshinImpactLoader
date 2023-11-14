@@ -18,13 +18,13 @@ Support to store/switch to Unlimited accounts more than one.
 
 1. Run `Genshin Impact Launcher` and Click `Run`.
 2. Login the 1st account in `Genshin Impact`.
-3. Quit `Genshin Impact`, run `Genshin Impact Loader` and choose your servers (`CN` or `Global` Area).
-4. Choose your account name and Click Save in `Genshin Impact Loader`.
-5. Click `Gone` in `Genshin Impact Loader` and run `Genshin Impact`.
+3. Quit `Genshin Impact`, run `Genshin Impact Loader` and choose your servers (aka `Global Server`).
+4. Input your account alias name and Click `Save` in `Genshin Impact Loader`.
+5. Click `Wipe` in `Genshin Impact Loader` and re-run `Genshin Impact`.
 6. Login the 2nd account in `Genshin Impact`.
-7. Repeat step 3 to 4.
+7. Repeat step 3 to 6.
 8. You can see and choose you have multi-accounts in the account list.
-9. Choose your account and Click `Load` before you start `Genshin Impact`.
+9. Choose your account alias and Click `Load Selected` before you start `Genshin Impact`.
 
 # Optional Step
 
