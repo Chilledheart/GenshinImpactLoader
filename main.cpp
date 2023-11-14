@@ -344,10 +344,25 @@ int WINAPI WinMain(HINSTANCE hInstance,
                         ImGui::CloseCurrentPopup();
                     }
                     const auto& account = g_loadedAccounts[i][selectedAccount[i]];
+
+                    std::wostringstream os;
                     std::time_t time = account.time();
+#ifdef _MSC_VER
+                    // https://stackoverflow.com/questions/4406895/what-stdlocale-names-are-available-on-common-windows-compilers
+                    // MinGW dones't accept locales except "C" and "POSIX"
+                    {
+                        // English_United States and zh_Hans_CN are not accepted in windows 7, and utf-8 is
+                        // not accepted as well.
+                        const char* localeName = isGlobal ? "en_US" : "zh_CN";
+                        os.imbue(std::locale(localeName));
+                    }
+#endif
+                    os << std::put_time(std::localtime(&time), L"%A %c");
+                    std::string time_str = SysWideToUTF8(os.str());
+
                     ImGui::Text("[%s]: %s", isGlobal ? "display name" : "账号名称", account.display_name().c_str());
                     ImGui::Text("[%s]: %s", isGlobal ? "key" : "密钥", account.name().data());
-                    ImGui::Text("[%s]: %s", isGlobal ? "time" : "创建时间", std::ctime(&time));
+                    ImGui::Text("[%s]: %s", isGlobal ? "time" : "创建时间", time_str.c_str());
                     const nlohmann::json &data_json = account.data_json();
                     for (auto& [key, val] : data_json.items()) {
                         if (val.is_discarded()) {
