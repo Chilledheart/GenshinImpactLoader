@@ -94,6 +94,8 @@ void LoadSavedAccounts(leveldb::DB* db, std::vector<Account> *loadedAccounts);
 bool WipeAccountToDb(leveldb::DB* db, const Account &account);
 [[nodiscard]]
 bool SaveAccountToDb(leveldb::DB* db, const Account &account);
+[[nodiscard]]
+bool SaveAccountsToDb(leveldb::DB* db, const std::vector<const Account*> &accounts);
 
 void LoadSavedAccounts_Old(std::vector<Account> *loadedAccounts);
 

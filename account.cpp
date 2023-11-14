@@ -9,6 +9,7 @@
 #include "helper.hpp"
 
 #include <leveldb/db.h>
+#include <leveldb/write_batch.h>
 #include <nlohmann/json.hpp>
 
 static const wchar_t* kGenshinImpactCnPathKey = L"Software\\miHoYo\\原神";
@@ -152,11 +153,7 @@ bool WipeAccountToDb(leveldb::DB* db, const Account &account) {
     return status.ok();
 }
 
-[[nodiscard]]
-bool SaveAccountToDb(leveldb::DB* db, const Account &account) {
-    leveldb::WriteOptions writeOptions;
-    leveldb::Status status;
-
+static std::string SerializeAccountToString(const Account &account) {
     std::string name = (const char*)&account.name()[0];
     std::string data = (const char*)&account.data()[0];
     json root;
@@ -167,9 +164,33 @@ bool SaveAccountToDb(leveldb::DB* db, const Account &account) {
     root["data"] = data;
     root["time"] = account.time();
 
-    writeOptions.sync = true;
-    status = db->Put(writeOptions, std::to_string(account.id()), root.dump());
+    return root.dump();
+}
 
+[[nodiscard]]
+bool SaveAccountToDb(leveldb::DB* db, const Account &account) {
+    leveldb::WriteOptions writeOptions;
+    leveldb::Status status;
+
+    writeOptions.sync = true;
+    status = db->Put(writeOptions, std::to_string(account.id()), SerializeAccountToString(account));
+
+    return status.ok();
+}
+
+[[nodiscard]]
+bool SaveAccountsToDb(leveldb::DB* db, const std::vector<const Account*> &accounts) {
+    leveldb::WriteBatch writeBatch;
+
+    for (const auto *account : accounts) {
+        writeBatch.Put(std::to_string(account->id()), SerializeAccountToString(*account));
+    }
+
+    leveldb::WriteOptions writeOptions;
+    leveldb::Status status;
+
+    writeOptions.sync = true;
+    status = db->Write(writeOptions, &writeBatch);
     return status.ok();
 }
 

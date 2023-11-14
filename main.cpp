@@ -506,13 +506,15 @@ void LoadAccountsFromDisk(HWND hwnd) {
     // Load saved data from disk
     {
         std::vector<Account> loadedAccounts[2];
+        std::vector<const Account*> accounts;
         LoadSavedAccounts_Old(loadedAccounts);
         for (int i = 0; i < 2; ++i) {
-            for (const Account& account : loadedAccounts[i]) {
-                if (!SaveAccountToDb(g_db, account)) {
-                    ::MessageBoxW(hwnd, L"Failed to Load Old Data", L"GenshinImpactLoader", MB_OK);
-                }
+            for (const auto& account : loadedAccounts[i]) {
+                accounts.push_back(&account);
             }
+        }
+        if (!accounts.empty() && !SaveAccountsToDb(g_db, accounts)) {
+            ::MessageBoxW(hwnd, L"Failed to Load Old Data", L"GenshinImpactLoader", MB_OK);
         }
     }
     LoadSavedAccounts(g_db, g_loadedAccounts);
