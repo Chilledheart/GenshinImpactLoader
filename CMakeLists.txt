@@ -21,8 +21,14 @@ if (NOT MSVC_CRT_LINKAGE STREQUAL "static" AND NOT MSVC_CRT_LINKAGE STREQUAL "dy
 endif()
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>$<$<STREQUAL:${MSVC_CRT_LINKAGE},dynamic>:DLL>")
 
-# Defer enabling C and CXX languages.
 set(APP_NAME "GenshinImpactLoader")
+set(APP_VERSION_MAJOR 1)
+set(APP_VERSION_MINOR 1)
+set(APP_VERSION_PATCH 0)
+set(APP_VERSION_TWEAK 0)
+set(APP_VERSION ${APP_VERSION_MAJOR}.${APP_VERSION_MINOR}.${APP_VERSION_PATCH})
+
+# Defer enabling C and CXX languages.
 project(${APP_NAME} NONE)
 
 if(MSVC)
@@ -221,10 +227,14 @@ link_libraries(leveldb)
 # *****************************************************************************************
 include_directories(njson/include SYSTEM)
 
+set(APP_MSVC_VERSION_RC "${CMAKE_CURRENT_BINARY_DIR}/version.rc")
+configure_file("version.rc.in" "${APP_MSVC_VERSION_RC}" @ONLY)
+
 add_executable(${APP_NAME}
   WIN32
   main.cpp
   account.cpp
   helper.cpp
   resource.rc
+  ${APP_MSVC_VERSION_RC}
   )

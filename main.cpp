@@ -22,7 +22,7 @@ static const wchar_t kGenshinImpactDir[] = L"GenshinImpactLoader";
 static const wchar_t kGenshinImpactImGuiIniFileName[] = L"GenshinImpactLoader\\imgui.ini";
 static const wchar_t kGenshinImpactLevelDbFileName[] = L"GenshinImpactLoader\\GenshinImpactLoader.db";
 
-#include "resource.h"
+#include "resource.hpp"
 
 // below definition comes from WinUser.h
 // https://docs.microsoft.com/en-us/windows/win32/hidpi/wm-dpichanged
