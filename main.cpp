@@ -209,8 +209,8 @@ int WINAPI WinMain(HINSTANCE hInstance,
     // English_United States and zh_Hans_CN are not accepted in windows 7,
     // and utf-8 is not accepted as well.
 #ifdef _MSC_VER
-    _locale_t global_loc = ::_create_locale(LC_TIME, "en_US");
-    _locale_t zhcn_loc = ::_create_locale(LC_TIME, "zh_CN");
+    _locale_t global_loc = ::_wcreate_locale(LC_TIME, L"en_US");
+    _locale_t zhcn_loc = ::_wcreate_locale(LC_TIME, L"zh_CN");
 #endif
 
     while (!done)
