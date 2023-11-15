@@ -107,8 +107,10 @@ jobs:
       matrix:
         arch:
           - name: i686
+            output: x86
             mingw_dir: mingw32
           - name: x86_64
+            output: x64
             mingw_dir: mingw64
         build_type: [Debug, Release]
     defaults:
@@ -161,5 +163,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          move build\GenshinImpactLoader.exe build\GenshinImpactLoaderMingw_${{ matrix.arch.name }}.exe
-          gh release upload ${{ github.event.release.tag_name }} build\GenshinImpactLoaderMingw_${{ matrix.arch.name }}.exe
+          move build\GenshinImpactLoader.exe build\GenshinImpactLoaderMingw_${{ matrix.arch.output }}.exe
+          gh release upload ${{ github.event.release.tag_name }} build\GenshinImpactLoaderMingw_${{ matrix.arch.output }}.exe
