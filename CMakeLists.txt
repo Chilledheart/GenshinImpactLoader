@@ -251,6 +251,12 @@ elseif (COMPILER_GCC OR COMPILER_CLANG)
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--icf=all")
 endif()
 
+## link to static c++ and pthread runtime
+if (NOT MSVC)
+  set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -static")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -static")
+endif()
+
 # add windows 7 support
 add_definitions(-DWINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP)
 add_definitions(-D_WIN32_WINNT=0x0601)
