@@ -3,14 +3,18 @@
 
 // Main code
 
+#include <locale.h>
+#include <sstream>
+#include <time.h>
 #include <vector>
+#include <wchar.h>
+
 #include <windows.h>
 
 #include "imgui.h"
 #include "imgui_impl_win32.h"
 #include "imgui_impl_dx11.h"
 #include <d3d11.h>
-#include <sstream>
 
 #include "account.hpp"
 #include "helper.hpp"
@@ -202,6 +206,13 @@ int WINAPI WinMain(HINSTANCE hInstance,
     int selectedAccount[2] = {};
     const char* alert_message = nullptr;
 
+    // English_United States and zh_Hans_CN are not accepted in windows 7,
+    // and utf-8 is not accepted as well.
+#ifdef _MSC_VER
+    _locale_t global_loc = ::_create_locale(LC_TIME, "en_US");
+    _locale_t zhcn_loc = ::_create_locale(LC_TIME, "zh_CN");
+#endif
+
     while (!done)
     {
         // Poll and handle messages (inputs, window resize, etc.)
@@ -345,20 +356,30 @@ int WINAPI WinMain(HINSTANCE hInstance,
                     }
                     const auto& account = g_loadedAccounts[i][selectedAccount[i]];
 
-                    std::wostringstream os;
-                    std::time_t time = account.time();
-#ifdef _MSC_VER
+                    std::string time_str = "<unspecified>";
                     // https://stackoverflow.com/questions/4406895/what-stdlocale-names-are-available-on-common-windows-compilers
-                    // MinGW dones't accept locales except "C" and "POSIX"
                     {
-                        // English_United States and zh_Hans_CN are not accepted in windows 7, and utf-8 is
-                        // not accepted as well.
-                        const char* localeName = isGlobal ? "en_US" : "zh_CN";
-                        os.imbue(std::locale(localeName));
-                    }
+                        wchar_t time_wstr[100];
+                        time_wstr[0] = L'\0';
+                        std::time_t time = account.time();
+#ifdef _MSC_VER
+                        _locale_t loc = isGlobal ? global_loc : zhcn_loc;
+                        if (::_wcsftime_l(time_wstr, IM_ARRAYSIZE(time_wstr), L"%#c", std::localtime(&time), loc)) {
+                            goto done;
+                        }
 #endif
-                    os << std::put_time(std::localtime(&time), L"%A %c");
-                    std::string time_str = SysWideToUTF8(os.str());
+                        // MinGW dones't accept locales except "C" and "POSIX"
+                        // even setlocale and other locale apis accept it (no effects at all)
+                        if (isGlobal) {
+                            std::wcsftime(time_wstr, IM_ARRAYSIZE(time_wstr), L"%A %c", std::localtime(&time));
+                        } else {
+                            auto t = std::localtime(&time);
+                            std::swprintf(time_wstr, IM_ARRAYSIZE(time_wstr), L"%04d年%02d月%02d日 %02d:%02d:%02d",
+                                          t->tm_year + 1900, t->tm_mon + 1, t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec);
+                        }
+done:
+                        time_str = SysWideToUTF8(time_wstr);
+                    }
 
                     ImGui::Text("[%s]: %s", isGlobal ? "display name" : "账号名称", account.display_name().c_str());
                     ImGui::Text("[%s]: %s", isGlobal ? "key" : "密钥", account.name().data());
@@ -393,6 +414,11 @@ int WINAPI WinMain(HINSTANCE hInstance,
         g_pSwapChain->Present(1, 0); // Present with vsync
         //g_pSwapChain->Present(0, 0); // Present without vsync
     }
+
+#ifdef _MSC_VER
+    ::_free_locale(zhcn_loc);
+    ::_free_locale(global_loc);
+#endif
 
     CloseDb(g_db);
 
