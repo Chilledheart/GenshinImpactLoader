@@ -102,12 +102,6 @@ if (MSVC AND MSVC_CRT_LINKAGE STREQUAL "static")
   endforeach()
 endif()
 
-# source code contains utf-8 charcters
-if (MSVC)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /utf-8")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /utf-8")
-endif()
-
 message(STATUS "Build with MSVC ${MSVC_CRT_LINKAGE} CRT library")
 
 ## definitions FOR CRT
@@ -142,6 +136,12 @@ if (NOT MSVC)
 
   ## disable exceptions
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions")
+
+  ## not omit stack frame pointer for release
+  set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -fno-omit-frame-pointer")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-omit-frame-pointer")
+  set(CMAKE_C_FLAGS_RELWITHDEBINFO   "${CMAKE_C_FLAGS_RELWITHDEBINFO} -fno-omit-frame-pointer")
+  set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -fno-omit-frame-pointer")
 else()
   ## Disable RTTI
   set(CompilerFlags
@@ -170,6 +170,10 @@ else()
   ## but /EHsc wasn't included in the compiler options
   ## https://docs.microsoft.com/en-us/cpp/build/reference/eh-exception-handling-model?view=msvc-170
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
+
+  ## not omit stack frame pointer
+  set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Oy-")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Oy-")
 endif()
 
 if (MSVC)
@@ -180,7 +184,69 @@ if (MSVC)
   # Tell linker to include FIXUP information symbol data
   set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /PROFILE")
   set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /PROFILE")
+
+  # Enable function-level linking.
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Gy")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Gy")
+
+  # Preserve previous PDB behavior.
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /FS")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FS")
+
+  # Some of our files are bigger than the regular limits.
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /bigobj")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
+
+  ## Set Source and Excutable character sets to UTF-8
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /utf-8")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /utf-8")
+
+  if (COMPILER_CLANG)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Zc:twoPhase")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:twoPhase")
+  endif()
+
+  ## Optimization flags
+  set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} /Zc:inline /DNDEBUG")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zc:inline /DNDEBUG")
+
+  # lld's uac manifest is outdated and incompatible with windows xp
+  if (COMPILER_CLANG)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /MANIFESTUAC:NO")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /MANIFESTUAC:NO")
+  endif()
+
+  ## supress some warnings
+  if (COMPILER_CLANG)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-microsoft-exception-spec")
+  endif()
+
+  if (COMPILER_CLANG)
+    # Debug information in the .obj files.
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} /Z7")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Z7")
+  else()
+    set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} /Zi")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zi")
+  endif()
+
+  # Tell linker to include symbol data
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /DEBUG")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DEBUG")
 elseif (COMPILER_GCC OR COMPILER_CLANG)
+  ## optimization flags
+  set(CMAKE_C_FLAGS_MINSIZEREL   "${CMAKE_C_FLAGS_MINSIZEREL} -DNDEBUG")
+  set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} -DNDEBUG")
+  set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG")
+
+  ## can gc eliminate any unused functions and data items
+  set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fdata-sections -ffunction-sections")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdata-sections -ffunction-sections")
+
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections")
+
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--icf=all")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--icf=all")
 endif()
