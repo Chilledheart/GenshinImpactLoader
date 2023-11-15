@@ -30,6 +30,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        arch:
+          - name: x64
+            host_arch: amd64
+          - name: x86
+            host_arch: x86
         build_type: [Debug, Release]
     env:
       BUILD_TYPE: '${{ matrix.build_type }}'
@@ -48,7 +53,7 @@ jobs:
           set vsdevcmd=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat
           set "VSCMD_START_DIR=%CD%"
 
-          call "%vsdevcmd%" -arch=x64 -host_arch=amd64 -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
+          call "%vsdevcmd%" -arch=${{ matrix.arch.name }} -host_arch=${{ matrix.arch.host_arch }} -winsdk=%Winsdk% -no_logo -vcvars_ver=%VCToolsVersion%
 
           mkdir build
           cd build && cmake -G Ninja -DCMAKE_BUILD_TYPE=%BUILD_TYPE% .. && ninja|| exit /b
@@ -57,7 +62,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ github.event.release.tag_name }} build\GenshinImpactLoader.exe
+          move build\GenshinImpactLoader.exe build\GenshinImpactLoader_${{ matrix.arch.name }}.exe
+          gh release upload ${{ github.event.release.tag_name }} build\GenshinImpactLoader_${{ matrix.arch.name }}.exe
   windows-clang-cl-release:
     runs-on: windows-2019
     strategy:
@@ -94,3 +100,66 @@ jobs:
         run: |
           move build\GenshinImpactLoader.exe build\GenshinImpactLoaderClangCl.exe
           gh release upload ${{ github.event.release.tag_name }} build\GenshinImpactLoaderClangCl.exe
+  windows-mingw64-release:
+    runs-on: windows-2019
+    strategy:
+      fail-fast: false
+      matrix:
+        arch:
+          - name: i686
+            mingw_dir: mingw32
+          - name: x86_64
+            mingw_dir: mingw64
+        build_type: [Debug, Release]
+    defaults:
+      run:
+        shell: cmd
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout with shallow submodules
+        run: |
+          # unshallow must come first otherwise submodule may be get unshallowed
+          git fetch --tags --unshallow
+          git submodule update --init --depth 1
+      - name: Cache mingw64 toolchain
+        id: mingw64-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            mingw64
+            mingw32
+          key: mingw64-${{ matrix.arch.name }}-toolchain
+      - name: "Download dependency: mingw64"
+        if: ${{ steps.mingw64-cache.outputs.cache-hit != 'true' }}
+        run: |
+          scripts\download-mingw.bat ${{ matrix.arch.name }}
+      - name: Build
+        run: |
+          set CC=gcc
+          set CXX=g++
+          set MINGWDIR=${{ matrix.arch.mingw_dir }}
+          set "Path=%CD%\%MINGWDIR%\bin;%Path%"
+
+          REM start to build with workaround
+          mkdir build
+          cd build
+          cmake -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ..
+          ninja
+      - name: Packaging
+        run: |
+          set MINGWDIR=${{ matrix.arch.mingw_dir }}
+          set "Path=%CD%\%MINGWDIR%\bin;%Path%"
+
+          cd build
+          objcopy --only-keep-debug GenshinImpactLoader.exe GenshinImpactLoader.exe.dbg
+          # stripped executable.
+          objcopy --strip-debug GenshinImpactLoader.exe
+          # to add a link to the debugging info into the stripped executable.
+          objcopy --add-gnu-debuglink=GenshinImpactLoader.exe.dbg GenshinImpactLoader.exe
+      - name: Upload dist tarball
+        if: ${{ github.event_name == 'release' && matrix.build_type == 'Release' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          move build\GenshinImpactLoader.exe build\GenshinImpactLoaderMingw_${{ matrix.arch.name }}.exe
+          gh release upload ${{ github.event.release.tag_name }} build\GenshinImpactLoaderMingw_${{ matrix.arch.name }}.exe

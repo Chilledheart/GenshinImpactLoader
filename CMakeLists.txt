@@ -102,7 +102,9 @@ if (MSVC AND MSVC_CRT_LINKAGE STREQUAL "static")
   endforeach()
 endif()
 
-message(STATUS "Build with MSVC ${MSVC_CRT_LINKAGE} CRT library")
+if (MSVC)
+  message(STATUS "Build with MSVC ${MSVC_CRT_LINKAGE} CRT library")
+endif()
 
 ## definitions FOR CRT
 add_definitions(-D__STD_C)
@@ -247,8 +249,10 @@ elseif (COMPILER_GCC OR COMPILER_CLANG)
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections")
 
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--icf=all")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--icf=all")
+  if (COMPILER_CLANG)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--icf=all")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--icf=all")
+  endif()
 endif()
 
 ## link to static c++ and pthread runtime

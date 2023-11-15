@@ -2,3 +2,5 @@
 /cmake-build-*
 /.idea
 /build-*
+/mingw32
+/mingw64
