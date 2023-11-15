@@ -258,7 +258,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
                 if (!g_loadedAccounts[i].empty()) {
                     const char** items = &loadedAccountNames[i][0];
-                    ImGui::ListBox(isGlobal ? u8"known accounts" : u8"账号列表", &selectedAccount[i], items, static_cast<int>(loadedAccountNames[i].size()), 4);
+                    ImGui::ListBox("##account-list-box", &selectedAccount[i], items, static_cast<int>(loadedAccountNames[i].size()), 4);
 
                     if (ImGui::Button(isGlobal ? u8"Load Selected" : u8"载入选中"))
                         load = 1;
