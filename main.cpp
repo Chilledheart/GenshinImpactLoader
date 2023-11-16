@@ -381,9 +381,10 @@ done:
                         time_str = SysWideToUTF8(time_wstr);
                     }
 
-                    ImGui::Text("[%s]: %s", isGlobal ? "display name" : "账号名称", account.display_name().c_str());
-                    ImGui::Text("[%s]: %s", isGlobal ? "key" : "密钥", account.name().data());
-                    ImGui::Text("[%s]: %s", isGlobal ? "time" : "创建时间", time_str.c_str());
+                    ImGui::BeginChild("Scrolling");
+                    ImGui::Text("[%s]: %s", isGlobal ? u8"display name" : u8"账号名称", account.display_name().c_str());
+                    ImGui::Text("[%s]: %s", isGlobal ? u8"key" : u8"密钥", account.name().data());
+                    ImGui::Text("[%s]: %s", isGlobal ? u8"time" : u8"创建时间", time_str.c_str());
                     const nlohmann::json &data_json = account.data_json();
                     for (auto& [key, val] : data_json.items()) {
                         if (val.is_discarded()) {
@@ -393,6 +394,7 @@ done:
                         os << val;
                         ImGui::Text("[%s]: %s", key.c_str(), os.str().c_str());
                     }
+                    ImGui::EndChild();
                     ImGui::EndPopup();
                 }
                 ImGui::EndTabItem();
