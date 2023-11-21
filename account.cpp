@@ -18,8 +18,10 @@ static const wchar_t* kGenshinImpactGlobalPathKey = L"Software\\miHoYo\\Genshin 
 static const wchar_t* kGenshinImpactGlobalSdkKey = L"MIHOYOSDK_ADL_PROD_OVERSEA_h1158948810";
 static const wchar_t* kGenshinImpactDataKey = L"GENERAL_DATA_h2389025596";
 
-static const char kGenshinImpactDbFileName[] = "GenshinImpactLoader.dat";
-static const char kGenshinImpactDbBakFileName[] = "GenshinImpactLoader.dat.bak";
+static const char kGenshinImpactDbANSIFileName[] = "GenshinImpactLoader.dat";
+
+static const wchar_t kGenshinImpactDbFileName[] = L"GenshinImpactLoader.dat";
+static const wchar_t kGenshinImpactDbBakFileName[] = L"GenshinImpactLoader.dat.bak";
 
 using json = nlohmann::json;
 
@@ -222,7 +224,7 @@ bool SaveAccountsToDb(leveldb::DB* db, const std::vector<const Account*> &accoun
 }
 
 void LoadSavedAccounts_Old(std::vector<Account> *loadedAccounts) {
-    FILE *f = fopen(kGenshinImpactDbFileName, "r");
+    FILE *f = fopen(kGenshinImpactDbANSIFileName, "r");
 
     if (!f)
         return;
@@ -253,5 +255,5 @@ void LoadSavedAccounts_Old(std::vector<Account> *loadedAccounts) {
 
     fclose(f);
 
-    ::MoveFileA(kGenshinImpactDbFileName, kGenshinImpactDbBakFileName);
+    ::MoveFileW(kGenshinImpactDbFileName, kGenshinImpactDbBakFileName);
 }
