@@ -76,6 +76,35 @@ leveldb::DB* OpenDb(const std::string& db_path) {
     options.create_if_missing = true;
 
     leveldb::Status status = leveldb::DB::Open(options, db_path, &db);
+
+    if (status.IsCorruption()) {
+        // attemp to repair db:
+        // enter FixCorruption routine
+        leveldb::Options repair_options;
+        repair_options.reuse_logs = false;
+        repair_options.create_if_missing = true;
+        repair_options.paranoid_checks = true;
+
+        status = leveldb::RepairDB(db_path, repair_options);
+        if (status.ok()) {
+            // repair db sucessfully:
+            // attempt to open db again
+            status = leveldb::DB::Open(options, db_path, &db);
+        }
+        // repair/re-open db failed:
+        // enter DeleteDbFile routine
+        if (!status.ok()) {
+            status = leveldb::DestroyDB(db_path, leveldb::Options());
+            if (!status.ok()) {
+                // unrecoverable
+                // failed to destroy db
+                return nullptr;
+            }
+            // destroy db sucessfully:
+            // attempt to open db again
+            status = leveldb::DB::Open(options, db_path, &db);
+        }
+    }
     if (!status.ok()) {
         // "Unable to open/create db" status.ToString()
         return nullptr;
@@ -91,7 +120,7 @@ void CloseDb(leveldb::DB* db) {
 
 void LoadSavedAccounts(leveldb::DB* db, std::vector<Account> *loadedAccounts) {
     // Iterate over each item in the database and print them
-    leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
+    std::unique_ptr<leveldb::Iterator> it(db->NewIterator(leveldb::ReadOptions()));
 
     for (it->SeekToFirst(); it->Valid(); it->Next()) {
         json root;
@@ -100,7 +129,7 @@ void LoadSavedAccounts(leveldb::DB* db, std::vector<Account> *loadedAccounts) {
         std::string slice = it->value().ToString();
         root = json::parse(slice, nullptr, false);
         if (root.is_discarded() || !root.is_object()) {
-            // err "Unable to parse key it->key()"
+            // err corrupted data
             continue;
         }
         if (root.contains("display_name") && root["display_name"].is_string() &&
@@ -131,15 +160,13 @@ void LoadSavedAccounts(leveldb::DB* db, std::vector<Account> *loadedAccounts) {
                             name, data, time);
             loadedAccounts[account.is_global() != 0 ? 0 : 1].push_back(account);
         } else {
-            // err non-parsable data
+            // err corrupted data
         }
     }
 
     if (!it->status().ok()) {
         // err db non-parsable data
     }
-
-    delete it;
 }
 
 [[nodiscard]]
