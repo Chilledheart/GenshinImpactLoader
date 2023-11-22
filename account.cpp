@@ -40,7 +40,7 @@ bool Account::Load() {
 
     if (!data_.empty()) {
         std::string slice = reinterpret_cast<const char*>(&data_[0]);
-        data_json_ = nlohmann::json::parse(slice, nullptr, false);
+        data_json_ = json::parse(slice, nullptr, false);
     }
 
     CloseKey(hkey);

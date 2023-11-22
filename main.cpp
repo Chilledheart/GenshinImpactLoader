@@ -19,8 +19,6 @@
 #include "account.hpp"
 #include "helper.hpp"
 
-using path = std::filesystem::path;
-
 static constexpr wchar_t kGenshinImpactDir[] = L"GenshinImpactLoader";
 static constexpr wchar_t kGenshinImpactImGuiIniFileName[] = L"GenshinImpactLoader\\imgui.ini";
 static constexpr wchar_t kGenshinImpactLevelDbFileName[] = L"GenshinImpactLoader\\GenshinImpactLoader.db";
