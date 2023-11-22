@@ -12,16 +12,16 @@
 #include <leveldb/write_batch.h>
 #include <nlohmann/json.hpp>
 
-static const wchar_t* kGenshinImpactCnPathKey = L"Software\\miHoYo\\原神";
-static const wchar_t* kGenshinImpactCnSdkKey = L"MIHOYOSDK_ADL_PROD_CN_h3123967166";
-static const wchar_t* kGenshinImpactGlobalPathKey = L"Software\\miHoYo\\Genshin Impact";
-static const wchar_t* kGenshinImpactGlobalSdkKey = L"MIHOYOSDK_ADL_PROD_OVERSEA_h1158948810";
-static const wchar_t* kGenshinImpactDataKey = L"GENERAL_DATA_h2389025596";
+static constexpr wchar_t kGenshinImpactCnPathKey[] = L"Software\\miHoYo\\原神";
+static constexpr wchar_t kGenshinImpactCnSdkKey[] = L"MIHOYOSDK_ADL_PROD_CN_h3123967166";
+static constexpr wchar_t kGenshinImpactGlobalPathKey[] = L"Software\\miHoYo\\Genshin Impact";
+static constexpr wchar_t kGenshinImpactGlobalSdkKey[] = L"MIHOYOSDK_ADL_PROD_OVERSEA_h1158948810";
+static constexpr wchar_t kGenshinImpactDataKey[] = L"GENERAL_DATA_h2389025596";
 
-static const char kGenshinImpactDbANSIFileName[] = "GenshinImpactLoader.dat";
+static constexpr char kGenshinImpactDbANSIFileName[] = "GenshinImpactLoader.dat";
 
-static const wchar_t kGenshinImpactDbFileName[] = L"GenshinImpactLoader.dat";
-static const wchar_t kGenshinImpactDbBakFileName[] = L"GenshinImpactLoader.dat.bak";
+static constexpr wchar_t kGenshinImpactDbFileName[] = L"GenshinImpactLoader.dat";
+static constexpr wchar_t kGenshinImpactDbBakFileName[] = L"GenshinImpactLoader.dat.bak";
 
 using json = nlohmann::json;
 

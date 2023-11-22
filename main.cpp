@@ -21,9 +21,9 @@
 
 using path = std::filesystem::path;
 
-static const wchar_t kGenshinImpactDir[] = L"GenshinImpactLoader";
-static const wchar_t kGenshinImpactImGuiIniFileName[] = L"GenshinImpactLoader\\imgui.ini";
-static const wchar_t kGenshinImpactLevelDbFileName[] = L"GenshinImpactLoader\\GenshinImpactLoader.db";
+static constexpr wchar_t kGenshinImpactDir[] = L"GenshinImpactLoader";
+static constexpr wchar_t kGenshinImpactImGuiIniFileName[] = L"GenshinImpactLoader\\imgui.ini";
+static constexpr wchar_t kGenshinImpactLevelDbFileName[] = L"GenshinImpactLoader\\GenshinImpactLoader.db";
 
 #include "resource.hpp"
 
