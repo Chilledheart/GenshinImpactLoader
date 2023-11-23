@@ -9,7 +9,7 @@ add_library(snappy STATIC
   win32/snappy-stubs-public.h
 )
 
-target_include_directories(snappy PUBLIC win32)
+target_include_directories(snappy SYSTEM PUBLIC win32)
 
 target_compile_definitions(snappy PRIVATE HAVE_CONFIG_H)
 
