@@ -76,6 +76,7 @@ leveldb::DB* OpenDb(const std::string& db_path) {
     leveldb::DB* db;
     leveldb::Options options;
     options.create_if_missing = true;
+    options.compression = leveldb::kZstdCompression;
 
     leveldb::Status status = leveldb::DB::Open(options, db_path, &db);
 
