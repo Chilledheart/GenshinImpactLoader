@@ -292,7 +292,7 @@ link_libraries(imgui)
 # *****************************************************************************************
 
 add_subdirectory(snappy)
-include_directories(snappy/src SYSTEM)
+include_directories(snappy/src)
 link_libraries(snappy)
 
 # *****************************************************************************************
@@ -312,13 +312,13 @@ set(HAVE_SNAPPY 1)
 set(HAVE_ZSTD 0)
 set(HAVE_TCMALLOC 0)
 add_subdirectory(leveldb)
-include_directories(leveldb/include SYSTEM)
+include_directories(leveldb/include)
 link_libraries(leveldb)
 
 # *****************************************************************************************
 #           json Library
 # *****************************************************************************************
-include_directories(njson/include SYSTEM)
+include_directories(njson/include)
 
 set(APP_MSVC_VERSION_RC "${CMAKE_CURRENT_BINARY_DIR}/version.rc")
 configure_file("version.rc.in" "${APP_MSVC_VERSION_RC}" @ONLY)
