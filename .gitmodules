@@ -7,3 +7,6 @@
 [submodule "snappy"]
 	path = snappy/src
 	url = https://github.com/google/snappy
+[submodule "zstd"]
+	path = zstd
+	url = https://github.com/Chilledheart/zstd

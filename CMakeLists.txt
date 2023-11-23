@@ -293,7 +293,20 @@ link_libraries(imgui)
 
 add_subdirectory(snappy)
 include_directories(snappy/src)
-link_libraries(snappy)
+
+# *****************************************************************************************
+#           zstd Library
+# *****************************************************************************************
+
+set(ZSTD_BUILD_PROGRAMS "OFF" CACHE STRING "")
+set(ZSTD_BUILD_CONTRIB "OFF" CACHE STRING "")
+set(ZSTD_BUILD_TESTS "OFF" CACHE STRING "")
+set(ZSTD_BUILD_STATIC "ON" CACHE STRING "")
+set(ZSTD_BUILD_SHARED "OFF" CACHE STRING "")
+set(ZSTD_PROGRAMS_LINK_SHARED "OFF" CACHE STRING "")
+set(ZSTD_INSTALL "OFF" CACHE STRING "")
+add_subdirectory(zstd/build/cmake)
+include_directories(zstd/lib)
 
 # *****************************************************************************************
 #           leveldb Library
@@ -309,7 +322,7 @@ set(BENCHMARK_INSTALL_DOCS "OFF" CACHE STRING "")
 set(BENCHMARK_ENABLE_TESTING "OFF" CACHE STRING "")
 set(HAVE_CRC32C 0)
 set(HAVE_SNAPPY 1)
-set(HAVE_ZSTD 0)
+set(HAVE_ZSTD 1)
 set(HAVE_TCMALLOC 0)
 add_subdirectory(leveldb)
 include_directories(leveldb/include)
