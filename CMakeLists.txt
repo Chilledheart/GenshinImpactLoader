@@ -288,6 +288,14 @@ add_library(imgui STATIC
 link_libraries(imgui)
 
 # *****************************************************************************************
+#           snappy Library
+# *****************************************************************************************
+
+add_subdirectory(snappy)
+include_directories(snappy/src SYSTEM)
+link_libraries(snappy)
+
+# *****************************************************************************************
 #           leveldb Library
 # *****************************************************************************************
 
@@ -300,7 +308,7 @@ set(BENCHMARK_ENABLE_INSTALL "OFF" CACHE STRING "")
 set(BENCHMARK_INSTALL_DOCS "OFF" CACHE STRING "")
 set(BENCHMARK_ENABLE_TESTING "OFF" CACHE STRING "")
 set(HAVE_CRC32C 0)
-set(HAVE_SNAPPY 0)
+set(HAVE_SNAPPY 1)
 set(HAVE_ZSTD 0)
 set(HAVE_TCMALLOC 0)
 add_subdirectory(leveldb)
