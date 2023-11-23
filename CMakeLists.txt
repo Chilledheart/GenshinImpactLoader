@@ -291,6 +291,11 @@ link_libraries(imgui)
 #           snappy Library
 # *****************************************************************************************
 
+if (NOT COMPILER_MSVC)
+  set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -mssse3")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mssse3")
+endif()
+
 add_subdirectory(snappy)
 include_directories(snappy/src)
 link_libraries(snappy)
