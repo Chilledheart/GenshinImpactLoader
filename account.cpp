@@ -18,8 +18,6 @@ static constexpr wchar_t kGenshinImpactGlobalPathKey[] = L"Software\\miHoYo\\Gen
 static constexpr wchar_t kGenshinImpactGlobalSdkKey[] = L"MIHOYOSDK_ADL_PROD_OVERSEA_h1158948810";
 static constexpr wchar_t kGenshinImpactDataKey[] = L"GENERAL_DATA_h2389025596";
 
-static constexpr char kGenshinImpactDbANSIFileName[] = "GenshinImpactLoader.dat";
-
 static constexpr wchar_t kGenshinImpactDbFileName[] = L"GenshinImpactLoader.dat";
 static constexpr wchar_t kGenshinImpactDbBakFileName[] = L"GenshinImpactLoader.dat.bak";
 
@@ -225,7 +223,7 @@ bool SaveAccountsToDb(leveldb::DB* db, const std::vector<const Account*> &accoun
 }
 
 void LoadSavedAccounts_Old(std::vector<Account> *loadedAccounts) {
-    FILE *f = fopen(kGenshinImpactDbANSIFileName, "r");
+    FILE *f = _wfopen(kGenshinImpactDbFileName, L"r");
 
     if (!f)
         return;
@@ -256,5 +254,5 @@ void LoadSavedAccounts_Old(std::vector<Account> *loadedAccounts) {
 
     fclose(f);
 
-    ::MoveFileW(kGenshinImpactDbFileName, kGenshinImpactDbBakFileName);
+    ::MoveFileExW(kGenshinImpactDbFileName, kGenshinImpactDbBakFileName, MOVEFILE_REPLACE_EXISTING);
 }
