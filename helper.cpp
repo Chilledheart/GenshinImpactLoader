@@ -59,11 +59,8 @@ std::wstring ExpandUserFromString(const std::wstring& path) {
     }
 
     std::wstring expanded_path;
-    expanded_path.resize(required_size);
+    expanded_path.resize(required_size - 1);
     ::ExpandEnvironmentStringsW(path.c_str(), &expanded_path[0], required_size);
-    while (!expanded_path.empty() && expanded_path[expanded_path.size() - 1] == L'\0') {
-        expanded_path.resize(expanded_path.size() - 1);
-    }
 
     return expanded_path;
 }
