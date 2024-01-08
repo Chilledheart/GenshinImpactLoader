@@ -3,7 +3,7 @@ Genshin Impact Multi-Account Login Loader
 
 [![License][license-svg]][license-link]
 
-[![GitHub all releases](https://img.shields.io/github/downloads/Chilledheart/GenshinImpactLoader/total)](https://github.com/Chilledheart/GenshinImpactLoader/releases)
+[![GitHub release (latest by SemVer)](https://img.shields.io/github/downloads/Chilledheart/GenshinImpactLoader/latest/total)](https://github.com/Chilledheart/GenshinImpactLoader/releases/latest)
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/Chilledheart/GenshinImpactLoader)](https://github.com/Chilledheart/GenshinImpactLoader/releases)
 
 [![Windows Build](https://github.com/Chilledheart/GenshinImpactLoader/actions/workflows/publish.yml/badge.svg)](https://github.com/Chilledheart/GenshinImpactLoader/actions/workflows/publish.yml)
