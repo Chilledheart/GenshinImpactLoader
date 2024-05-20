@@ -255,6 +255,20 @@ elseif (COMPILER_GCC OR COMPILER_CLANG)
   endif()
 endif()
 
+## lld linker
+if (COMPILER_CLANG)
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=lld")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=lld")
+endif()
+
+## lto thin
+if (COMPILER_CLANG)
+  set(CMAKE_C_FLAGS_MINSIZEREL   "${CMAKE_C_FLAGS_MINSIZEREL} -flto=thin -fsplit-lto-unit")
+  set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} -flto=thin -fsplit-lto-unit")
+  set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -flto=thin -fsplit-lto-unit")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto=thin -fsplit-lto-unit")
+endif()
+
 ## link to static c++ and pthread runtime
 if (NOT MSVC)
   set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -static")

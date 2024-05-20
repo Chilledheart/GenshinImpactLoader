@@ -8,7 +8,7 @@ ARCH=$(uname -s)
 MACHINE=$(uname -m)
 
 WITH_CPU=${WITH_CPU:-${MACHINE}}
-BUILD_TYPE=${BUILD_TYPE:-Release}
+BUILD_TYPE=${BUILD_TYPE:-MinSizeRel}
 
 case "$WITH_CPU" in
   x86|i586|i686)
