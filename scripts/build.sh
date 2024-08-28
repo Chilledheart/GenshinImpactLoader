@@ -7,6 +7,7 @@ cd $PWD/..
 ARCH=$(uname -s)
 MACHINE=$(uname -m)
 
+LLVM_MINGW_VER=20240619
 WITH_CPU=${WITH_CPU:-${MACHINE}}
 BUILD_TYPE=${BUILD_TYPE:-MinSizeRel}
 
@@ -26,37 +27,34 @@ mkdir -p third_party
 
 case "$ARCH" in
   MINGW*|MSYS*)
-    HOST_OS="windows"
-    if [ ! -d third_party/llvm-mingw-20240518-ucrt-${MACHINE} ]; then
+    if [ ! -d third_party/llvm-mingw-${LLVM_MINGW_VER}-ucrt-${MACHINE} ]; then
       pushd third_party
-      curl -C - -L -O https://github.com/mstorsjo/llvm-mingw/releases/download/20240518/llvm-mingw-20240518-ucrt-${MACHINE}.zip
-      "/c/Program Files/7-Zip/7z.exe" x llvm-mingw-20240518-ucrt-${MACHINE}.zip -aoa
-      rm -f llvm-mingw-20240518-ucrt-${MACHINE}.zip
+      curl -C - -L -O https://github.com/mstorsjo/llvm-mingw/releases/download/${LLVM_MINGW_VER}/llvm-mingw-${LLVM_MINGW_VER}-ucrt-${MACHINE}.zip
+      "/c/Program Files/7-Zip/7z.exe" x llvm-mingw-${LLVM_MINGW_VER}-ucrt-${MACHINE}.zip -aoa
+      rm -f llvm-mingw-${LLVM_MINGW_VER}-ucrt-${MACHINE}.zip
       popd
     fi
-    LLVM_BASE="$PWD/third_party/llvm-mingw-20240518-ucrt-${MACHINE}"
+    LLVM_BASE="$PWD/third_party/llvm-mingw-${LLVM_MINGW_VER}-ucrt-${MACHINE}"
     ;;
   Linux)
-    HOST_OS="linux"
-    if [ ! -d third_party/llvm-mingw-20240518-ucrt-ubuntu-20.04-${MACHINE} ]; then
+    if [ ! -d third_party/llvm-mingw-${LLVM_MINGW_VER}-ucrt-ubuntu-20.04-${MACHINE} ]; then
       pushd third_party
-      curl -C - -L -O https://github.com/mstorsjo/llvm-mingw/releases/download/20240518/llvm-mingw-20240518-ucrt-ubuntu-20.04-${MACHINE}.tar.xz
-      tar -xf llvm-mingw-20240518-ucrt-ubuntu-20.04-${MACHINE}.tar.xz
-      rm -f llvm-mingw-20240518-ucrt-ubuntu-20.04-${MACHINE}.tar.xz
+      curl -C - -L -O https://github.com/mstorsjo/llvm-mingw/releases/download/${LLVM_MINGW_VER}/llvm-mingw-${LLVM_MINGW_VER}-ucrt-ubuntu-20.04-${MACHINE}.tar.xz
+      tar -xf llvm-mingw-${LLVM_MINGW_VER}-ucrt-ubuntu-20.04-${MACHINE}.tar.xz
+      rm -f llvm-mingw-${LLVM_MINGW_VER}-ucrt-ubuntu-20.04-${MACHINE}.tar.xz
       popd
     fi
-    LLVM_BASE="$PWD/third_party/llvm-mingw-20240518-ucrt-ubuntu-20.04-${MACHINE}"
+    LLVM_BASE="$PWD/third_party/llvm-mingw-${LLVM_MINGW_VER}-ucrt-ubuntu-20.04-${MACHINE}"
     ;;
   Darwin)
-    HOST_OS="darwin"
-    if [ ! -d third_party/llvm-mingw-20240518-ucrt-macos-universal ]; then
+    if [ ! -d third_party/llvm-mingw-${LLVM_MINGW_VER}-ucrt-macos-universal ]; then
       pushd third_party
-      curl -C - -L -O https://github.com/mstorsjo/llvm-mingw/releases/download/20240518/llvm-mingw-20240518-ucrt-macos-universal.tar.xz
-      tar -xf llvm-mingw-20240518-ucrt-macos-universal.tar.xz
-      rm -f llvm-mingw-20240518-ucrt-macos-universal.tar.xz
+      curl -C - -L -O https://github.com/mstorsjo/llvm-mingw/releases/download/${LLVM_MINGW_VER}/llvm-mingw-${LLVM_MINGW_VER}-ucrt-macos-universal.tar.xz
+      tar -xf llvm-mingw-${LLVM_MINGW_VER}-ucrt-macos-universal.tar.xz
+      rm -f llvm-mingw-${LLVM_MINGW_VER}-ucrt-macos-universal.tar.xz
       popd
     fi
-    LLVM_BASE="$PWD/third_party/llvm-mingw-20240518-ucrt-macos-universal"
+    LLVM_BASE="$PWD/third_party/llvm-mingw-${LLVM_MINGW_VER}-ucrt-macos-universal"
     ;;
   *)
     echo "Unsupported OS ${ARCH}"

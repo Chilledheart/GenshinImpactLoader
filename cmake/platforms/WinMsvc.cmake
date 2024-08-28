@@ -277,6 +277,9 @@ string(REPLACE ";" " " COMPILE_FLAGS "${COMPILE_FLAGS}")
 # The assignments to the _INITIAL cache variables don't use FORCE, so they'll
 # only be populated on the initial configure, and their values won't change
 # afterward.
+set(_CMAKE_ASM_FLAGS_INITIAL "${CMAKE_ASM_FLAGS}" CACHE STRING "")
+set(CMAKE_ASM_FLAGS "${_CMAKE_ASM_FLAGS_INITIAL} ${COMPILE_FLAGS}" CACHE STRING "" FORCE)
+
 set(_CMAKE_C_FLAGS_INITIAL "${CMAKE_C_FLAGS}" CACHE STRING "")
 set(CMAKE_C_FLAGS "${_CMAKE_C_FLAGS_INITIAL} ${COMPILE_FLAGS}" CACHE STRING "" FORCE)
 
@@ -338,6 +341,11 @@ set(CMAKE_CXX_STANDARD_LIBRARIES "" CACHE STRING "" FORCE)
 
 # where is the target environment
 set (CMAKE_FIND_ROOT_PATH "${WINSDK_BASE}")
+# modify default behavior of FIND_XXX() commands
+set (CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+set (CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+set (CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+set (CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
 set (CMAKE_SYSTEM_INCLUDE_PATH
     "${ATLMFC_INCLUDE}"
     "${MSVC_INCLUDE}"
@@ -351,7 +359,6 @@ set (CMAKE_SYSTEM_LIBRARY_PATH
     "${MSVC_LIB}/${WINSDK_ARCH}"
     "${WINSDK_LIB}/ucrt/${WINSDK_ARCH}"
     "${WINSDK_LIB}/um/${WINSDK_ARCH}"
-    "${winsdk_lib_symlinks_dir}"
   )
 
 # Allow clang-cl to work with macOS paths.
