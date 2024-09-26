@@ -192,7 +192,9 @@ static std::string SerializeAccountToString(const Account &account) {
     root["data"] = data;
     root["time"] = account.time();
 
-    return root.dump();
+    // Call with defaults except in the case of UTF-8 errors which we replace
+    // invalid UTF-8 characters instead of throwing an exception.
+    return root.dump(4, ' ', false, nlohmann::detail::error_handler_t::replace);
 }
 
 [[nodiscard]]
