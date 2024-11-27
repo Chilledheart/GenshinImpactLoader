@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
-/* Copyright (c) 2022-2023 Chilledheart  */
+/* Copyright (c) 2022-2024 Chilledheart  */
 
 // Main code
 
 #include <locale.h>
+#include <string_view>
 #include <sstream>
 #include <time.h>
 #include <vector>
+#include <utility>
 #include <wchar.h>
 
 #include <windows.h>
@@ -64,11 +66,16 @@ static void OnChangedViewport(HWND hwnd, float scale_factor, const RECT* l);
 static void LoadAccountsFromDisk(HWND hwnd);
 static LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-static constexpr wchar_t kMsyhTTCFontName[] = L"msyh.ttc";
-static constexpr wchar_t kMsyhTTFFontName[] = L"msyh.ttf";
-static constexpr INT kMsyhFontSize = 14;
-static constexpr wchar_t kSimSunFontName[] = L"simsun.ttc";
-static constexpr INT kSimSunFontSize = 12;
+using std::string_view_literals::operator""sv;
+static constexpr std::pair<std::wstring_view, INT> g_fontRegisties[] = {
+    {L"msyh.ttc"sv, 14},
+    {L"msyh.ttf"sv, 14},
+    {L"simsun.ttc"sv, 12},
+    {L"sourcehansans.ttc"sv, 12},
+    {L"wqy-zenhei.ttc"sv, 12},
+    {L"wqy-microhei.ttc"sv, 12},
+    {L"unifont.ttf"sv, 12},
+};
 static constexpr INT kDefaultFontSize = 13;
 
 static void SetupWindowSize(HWND hwnd, float scale_factor, RECT *rect) {
@@ -86,30 +93,16 @@ static void SetupFonts(float scale_factor) {
     auto fonts_path = GetWindowsFontsPath();
 
     ImFont* font = nullptr;
-    auto p = fonts_path / kMsyhTTCFontName;
-    if (font == nullptr && FileExists(p)) {
-        g_font_name = p.u8string();
-        g_font_size = kMsyhFontSize;
-        font = io.Fonts->AddFontFromFileTTF(g_font_name.c_str(), (float)SCALED_SIZE(g_font_size),
-                                            nullptr, io.Fonts->GetGlyphRangesChineseFull());
-        IM_ASSERT(font != nullptr);
-    }
-    p = fonts_path / kMsyhTTFFontName;
-    if (font == nullptr && FileExists(p)) {
-        g_font_name = p.u8string();
-        g_font_name = (fonts_path / kMsyhTTFFontName).u8string();
-        g_font_size = kMsyhFontSize;
-        font = io.Fonts->AddFontFromFileTTF(g_font_name.c_str(), (float)SCALED_SIZE(g_font_size),
-                                            nullptr, io.Fonts->GetGlyphRangesChineseFull());
-        IM_ASSERT(font != nullptr);
-    }
-    p = fonts_path / kSimSunFontName;
-    if (font == nullptr && FileExists(p)) {
-        g_font_name = p.u8string();
-        g_font_size = kSimSunFontSize;
-        font = io.Fonts->AddFontFromFileTTF(g_font_name.c_str(), (float)SCALED_SIZE(g_font_size),
-                                            nullptr, io.Fonts->GetGlyphRangesChineseFull());
-        IM_ASSERT(font != nullptr);
+    for (const auto& font_pair : g_fontRegisties) {
+        auto p = fonts_path / font_pair.first;
+        if (font == nullptr && FileExists(p)) {
+            g_font_name = p.u8string();
+            g_font_size = font_pair.second;
+            font = io.Fonts->AddFontFromFileTTF(g_font_name.c_str(), (float)SCALED_SIZE(g_font_size),
+                                                nullptr, io.Fonts->GetGlyphRangesChineseFull());
+            IM_ASSERT(font != nullptr);
+            break;
+        }
     }
     if (font == nullptr) {
         g_font_name = std::string();
