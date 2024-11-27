@@ -307,6 +307,7 @@ add_library(imgui STATIC
   imgui/imgui_widgets.cpp
 )
 link_libraries(imgui)
+target_compile_definitions(imgui PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
 
 # *****************************************************************************************
 #           snappy Library
